@@ -57,7 +57,7 @@ Students using online education portals such as EBA have course material spread 
 |---|---|---|---|
 | D-01 | Backend services | FastAPI REST services for authentication, the EBA mock adapter, sources, generation jobs, the study planner and the dashboard, with the PostgreSQL schema and the job queue | All endpoints match the OpenAPI contracts and pass their unit and integration tests in CI |
 | D-02 | AI pipeline | Document processing and embedding, retrieval with citations, LLM gateway, summary, quiz and study plan generation | Passes mocked-LLM tests; on the evaluation set at least 80% of answers cite a correct source passage and at least 95% of generated summaries compile to PDF |
-| D-03 | Web frontend | React application in Turkish and English with student, teacher and administrator views | All main user flows pass the Playwright end-to-end tests; SUS score of at least 70 |
+| D-03 | Web frontend | React application in Turkish with student, teacher and administrator views | All main user flows pass the Playwright end-to-end tests; SUS score of at least 70 |
 | D-04 | Deployed system and CI/CD | Docker images, GCP deployment (Cloud Run, Cloud SQL, Cloud Storage) and GitHub Actions pipelines | `main` is deployed automatically; release v1.0.0 runs on GCP |
 | D-05 | Test suite and evaluation dataset | Unit, integration, end-to-end, security and performance tests; mocked LLM fixtures; Turkish/English evaluation questions | At least 80% backend test coverage (course standard); all tests pass on v1.0.0 |
 | D-06 | Documentation | Course reports, README, `agents.md`, API documentation and AI usage reports | Each report is released on GitHub by its deadline and reviewed by the TA |
@@ -87,7 +87,7 @@ Tasks T-02 to T-09 are the in-scope epics of the charter, in the same order. T-0
 |---|---|---|
 | Security and privacy | Passwords are hashed; JWT sessions; every endpoint checks role and assignment; only the data the features need is stored and students' personal data is handled according to KVKK (no real student data in development); API keys kept in secrets; uploaded documents are treated as untrusted input (prompt-injection defense) | Authorization tests for each role including cross-user access (WBS-2.2, WBS-7.1); privacy and prompt-injection tests (WBS-10.3) |
 | Performance | Normal API calls answer within about 1 second with 20 users at the same time; a cited answer starts within 10 seconds; summary and quiz jobs show their status and finish within 2 minutes | Simple load test on the deployed system (WBS-10.3) |
-| Usability | Turkish and English interface; clear navigation for each role; System Usability Scale (SUS) score of at least 70 | Usability sessions with at least 5 students and the SUS questionnaire (WBS-10.4) |
+| Usability | Turkish interface; generated answers and study material are in Turkish; clear navigation for each role; System Usability Scale (SUS) score of at least 70 | Usability sessions with at least 5 students and the SUS questionnaire (WBS-10.4) |
 | Accessibility | Keyboard navigation, sufficient contrast, labels and alternative texts (WCAG 2.1 AA basics) | Lighthouse accessibility score of at least 90 on every page and a keyboard-only walkthrough of the main flows (WBS-10.4) |
 | Reliability | If an LLM provider returns an error, rate-limits or times out, the gateway retries and falls back to another provider; a generation job that fails (e.g. LaTeX does not compile, invalid output, all providers unavailable) or runs longer than 2 minutes is marked as failed and the user sees an error message | Provider-failure and job-failure tests (WBS-8.2, WBS-5.2) |
 | Cost | Token usage recorded per student; monthly budget limit enforced | Budget limit tests (WBS-8.2); token usage on the dashboard |
@@ -106,7 +106,7 @@ Tasks T-02 to T-09 are the in-scope epics of the charter, in the same order. T-0
 | WBS-1.3 | T-01 | Repository scaffolding | Backend and frontend skeleton, linters, README, `agents.md`; the project builds and runs locally | T |
 | WBS-1.4 | T-01 | CI pipeline | GitHub Actions runs linters and tests on every PR; branch protection on `main` | T |
 | WBS-1.5 | T-01 | Test infrastructure | pytest and Vitest setup, mocked LLM and provider fixtures, coverage report in CI | S |
-| WBS-1.6 | T-01 | Frontend foundation | App shell, routing, API client generated from the contracts, Turkish/English texts (i18n), accessible shared components | S |
+| WBS-1.6 | T-01 | Frontend foundation | App shell, routing, API client generated from the contracts, Turkish interface texts, accessible shared components | S |
 | WBS-1.7 | T-01 | Background job queue | Redis and a worker for long-running generation, job status API, time limits and failure states | S |
 | WBS-2.1 | T-02 | Access and privacy design | Role and assignment access matrix; which personal data is stored and how (KVKK) | S |
 | WBS-2.2 | T-02 | Authorization tests | Tests for each role, including attempts to access other users' data | S |
@@ -168,7 +168,7 @@ Each charter epic (T-02 to T-09) is split into design, test and build activities
 | WBS-1.3 | T | 0.25 | Generated from the standard FastAPI and Vite templates (AI 0.2 / us 0.05) |
 | WBS-1.4 | T | 0.25 | Standard GitHub Actions workflows for Python and Node (AI 0.1 / us 0.15) |
 | WBS-1.5 | S | 0.5 | Shared fixtures that every test activity uses (AI 0.2 / us 0.3) |
-| WBS-1.6 | S | 0.5 | Mostly standard React setup, the i18n and accessibility parts need more care (AI 0.4 / us 0.1) |
+| WBS-1.6 | S | 0.5 | Mostly standard React setup, the accessibility parts need more care (AI 0.4 / us 0.1) |
 | WBS-1.7 | S | 0.5 | Done with a library (e.g. RQ); job status and failure handling is the real work (AI 0.4 / us 0.1) |
 | WBS-2.1 | S | 0.5 | Users are K-12 students, so we plan the data handling carefully (KVKK) |
 | WBS-2.2 | S | 0.5 | Lots of negative cases for three roles and the assignments (AI 0.2 / us 0.3) |
@@ -192,7 +192,7 @@ Each charter epic (T-02 to T-09) is split into design, test and build activities
 | WBS-6.3 | S | 0.5 | Built from the design in 6.1 (AI 0.4 / us 0.1) |
 | WBS-6.4 | T | 0.25 | One read-only page (AI 0.2 / us 0.05) |
 | WBS-7.1 | T | 0.25 | Reuses the authorization test fixtures (AI 0.1 / us 0.15) |
-| WBS-7.2 | T | 0.25 | Reuses the planner's success-rate queries and the token data (AI 0.2 / us 0.05) |
+| WBS-7.2 | T | 0.25 | Uses the portal grades and the token data (AI 0.2 / us 0.05) |
 | WBS-7.3 | S | 0.5 | Two views with tables and simple charts (AI 0.4 / us 0.1) |
 | WBS-8.1 | T | 0.25 | Follows the architecture from 1.1 |
 | WBS-8.2 | T | 0.25 | Uses the mocked providers from 1.5 (AI 0.1 / us 0.15) |
@@ -511,7 +511,9 @@ flowchart LR
     FREEZE --> W11_7 --> FINISH
 
     subgraph Documents
-        W11_2["WBS-11.2<br/>Req. Spec<br/>02.11"] --> W11_3["WBS-11.3<br/>Wireframes"] --> W11_4["WBS-11.4<br/>Req. Analysis<br/>23.11"] --> W11_5["WBS-11.5<br/>Design Spec<br/>07.12"] --> W11_6["WBS-11.6<br/>Test Spec<br/>21.12"]
+        W11_2["WBS-11.2<br/>Req. Spec<br/>02.11"] --> W11_3["WBS-11.3<br/>Wireframes"]
+        W11_2 --> W11_4["WBS-11.4<br/>Req. Analysis<br/>23.11"]
+        W11_3 & W11_4 --> W11_5["WBS-11.5<br/>Design Spec<br/>07.12"] --> W11_6["WBS-11.6<br/>Test Spec<br/>21.12"]
     end
     W11_3 -.-> W2_4 & W4_5 & W5_5 & W6_4 & W7_3
     W11_6 --> W11_7
@@ -592,7 +594,7 @@ Durations come from Sections 3 and 4.2 (team effort / team allocation). ES and E
 **Total project schedule:** **11 weeks**, from **2026-10-12** to **2026-12-28** (10 weeks of development up to the code freeze on 25.12.2026).
 
 **Critical-path explanation:**
-The critical paths are the longest chains in the network, so they have zero float. Several chains are 9 weeks long, because the cited Q&A service (WBS-4.4) needs both the processing chain and the gateway chain, and both depend on the database design. The code freeze allows 10 weeks, so the critical path has 1 week of schedule reserve. Because members work part-time on several activities, the planned schedule uses this reserve: as planned, the following activities have no slack left before the freeze: WBS-1.7, WBS-4.3, WBS-4.4, WBS-5.1, WBS-5.3, WBS-8.3, WBS-10.2, WBS-10.5. If one of them slips, the free capacity listed in Section 4.2 is moved to it, and optional scope is dropped first.
+The critical paths are the longest chains in the network, so they have zero float. Several chains are 9 weeks long, because the cited Q&A service (WBS-4.4) needs both the processing chain and the gateway chain, and both depend on the database design. The code freeze allows 10 weeks, so the critical path has 1 week of schedule reserve. Because members work part-time on several activities, the planned schedule uses this reserve: as planned, the following activities have no slack left before the freeze: WBS-1.7, WBS-4.3, WBS-4.4, WBS-5.1, WBS-5.3, WBS-8.3, WBS-10.2, WBS-10.5. If one of them slips, the free hours listed in Section 4.2 are moved to it; if that is not enough, we simplify a must-have feature after agreeing with the customer.
 
 ### 5.3 Gantt Chart — Project Timeline
 
@@ -727,8 +729,8 @@ gantt
 |---|---|---|---|---|
 | R-01 | WBS-9.1, WBS-9.2 | Deployment designed in W5 and first deployed in W6-W7, well before the freeze; credits checked early; everything runs in Docker | Berkay Türk | Run the demo from the Docker setup on a single VM or locally |
 | R-02 | WBS-11.2, WBS-11.4 | Questions asked in GitHub issues between meetings; assumptions written down in the requirements documents | Burak Emre Polat | Continue with the documented assumptions and confirm them in the next meeting |
-| R-03 | WBS-4.1, WBS-4.3, WBS-4.4, WBS-10.2 | Retrieval designed in a pair (Metin and Berkay); every PR reviewed by a second member; all work visible on the board | Burak Emre Polat | Berkay takes over the RAG work; free capacity in W9-W10 and optional scope are used |
-| R-04 | All coding activities, WBS-10.1 | Every merged PR is reviewed and understood by the team; we use common libraries the team can maintain without the AI; AI usage tracked weekly | Berkay Türk | The team writes the code itself; the buffer covers part of the extra effort and optional scope is dropped |
+| R-03 | WBS-4.1, WBS-4.3, WBS-4.4, WBS-10.2 | Retrieval designed in a pair (Metin and Berkay); every PR reviewed by a second member; all work visible on the board | Burak Emre Polat | Berkay takes over the RAG work; the free hours in W9-W10 are used and, if needed, a must-have feature is simplified after agreeing with the customer |
+| R-04 | All coding activities, WBS-10.1 | Every merged PR is reviewed and understood by the team; we use common libraries the team can maintain without the AI; AI usage tracked weekly | Berkay Türk | The team writes the code itself; the buffer covers part of the extra effort and must-have features are simplified after agreeing with the customer |
 | R-05 | WBS-8.2, WBS-8.3, WBS-10.2 | Mocked LLM calls in all tests; free tiers used first; $20 monthly cap and per-student budget limit; fallback between providers when a free tier is rate-limited | Burak Emre Polat | Switch to a cheaper model for development; limit generation per student |
 | R-06 | WBS-4.3, WBS-5.3, WBS-8.3 | Small experiments with each tool during the design activities (WBS-4.1, WBS-5.1, WBS-8.1) | Metin Furkan Amarat | Use a simpler alternative (e.g. plain HTML-to-PDF instead of LaTeX) after agreeing with the customer |
 | R-07 | WBS-4.1, WBS-4.3, WBS-4.4 | Multilingual embedding model (bge-m3) chosen from experiments with real Turkish course material (WBS-4.1) and tested in WBS-4.2 | Metin Furkan Amarat | Try another embedding model or add keyword search next to vector search |
