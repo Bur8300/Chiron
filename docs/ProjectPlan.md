@@ -11,7 +11,7 @@
 | **Group members** | Burak Emre Polat — 150230328, Metin Furkan Amarat — 150230301, Hasan Yalçın Arıkanoğlu — 150220341, Berkay Türk — 150220320, Abdullah Faruk Özbek — 150220327 |
 | **Instructor** | Prof. Dr. Tolga Ovatman, Assoc. Prof. Dr. Ayşe Tosun |
 | **Submission date** | 2026-10-25 |
-| **Document version** | 1.0 |
+| **Document version** | 1.1 (revised after the TA review of v1.0, 2026-11-04) |
 
 ---
 
@@ -20,9 +20,9 @@
 ### 1.1 Scope
 
 **Project overview:**
-Students using online education portals such as EBA have course material spread across many sources and little guidance on what to study next. Chiron is an AI-powered study assistant for EBA-like portals. Students upload course sources, ask questions answered with citations to those sources, generate summaries (as PDF) and quizzes from them, and get a weekly study plan that sets study hours and steps for their weakest topics. Teachers and administrators follow the performance and AI token usage of the students assigned to them. Portal integration is demonstrated with a mock EBA adapter. The scope below follows the approved Project Charter and the requests of Customer Meeting 1 (14.10.2026).
+Students using online education portals such as EBA have course material spread across many sources and little guidance on what to study next. Chiron is an AI-powered study assistant for EBA-like portals. Students upload course sources, ask questions answered with citations to those sources, generate summaries (as PDF) and quizzes from them, and get a weekly study plan that sets study hours and steps for their weakest topics. Teachers and administrators follow the performance and AI token usage of the students assigned to them. Chiron is used through a web application and a mobile application for Android and iOS built from the same web frontend. Portal integration is demonstrated with a mock EBA adapter. The scope below follows the approved Project Charter, the requests of Customer Meeting 1 (14.10.2026) and the TA review of Project Plan v1.0 (31.10.2026), which made the mobile application mandatory.
 
-**In scope:** (all Must-have in the charter)
+**In scope:** (all Must-have)
 - Authentication and role-based access for students, teachers and administrators
 - EBA mock adapter serving courses, units, topics, content and student grades
 - Source upload and question answering with citations (RAG)
@@ -31,15 +31,15 @@ Students using online education portals such as EBA have course material spread 
 - Teacher/admin dashboard for student performance and token usage
 - Multi-model LLM gateway with fallback, cost control and per-student token tracking
 - Cloud deployment on GCP with CI/CD
+- Mobile application for Android and iOS built from the web frontend with Capacitor, with the same features and roles as the web application (added after the TA review of v1.0, issue #4)
 
 **Optional scope:**
 - Additional study material formats such as flashcards (Stretch in the charter; only if the output proves reliable)
-- Mobile-friendly web interface, to be decided in a later customer meeting (issue #4)
 
 **Out of scope:**
 - Real integration with the official EBA platform
 - Multimodal output generation: short-form video, audio overviews and PPTX presentations
-- Native mobile applications
+- A separately coded native mobile application (the mobile application reuses the web frontend through Capacitor) and publishing to the app stores
 - Training or fine-tuning of custom models
 - Languages other than Turkish and English
 
@@ -49,7 +49,7 @@ Students using online education portals such as EBA have course material spread 
 - **AI agent:** the AI agent (Claude Code), listed as a team member in the charter, drafts code, tests and documents through branches and PRs; every output is reviewed by a team member. We assume the AI agent drafts 80% of the coding effort, 40% of the test-writing effort and 30% of the course reports; this work does not use team capacity. Reviewing every AI-drafted PR (WBS-10.1) and completing and integrating the AI's code (WBS-10.6) are planned as separate team activities. We will track the real shares in the AI usage reports and update the plan if they turn out different.
 - **Process:** for each feature we first design it, then write the tests, then build it (test-first). Following the effort split from the course, most of our effort goes into analysis, design and testing (Section 3).
 - **Budget:** GCP services stay within free-tier / student credits. LLM calls use the providers' free tiers and student credits first; paid LLM API usage is capped at $20 per month for the whole team, enforced and tracked per student by the gateway. Tests use mocked LLM calls and cost nothing.
-- **Technology:** as listed in the charter (FastAPI, PostgreSQL with pgvector, Redis job queue, React, LiteLLM, bge-m3, Tectonic, GCP).
+- **Technology:** as listed in the charter (FastAPI, PostgreSQL with pgvector, Redis job queue, React, LiteLLM, bge-m3, Tectonic, GCP), plus Capacitor to package the React frontend as an Android and iOS application. The iOS application is built with Xcode on a team member's Mac and installed on an iPhone for testing and the demo.
 
 ### 1.2 Deliverables
 
@@ -57,15 +57,16 @@ Students using online education portals such as EBA have course material spread 
 |---|---|---|---|
 | D-01 | Backend services | FastAPI REST services for authentication, the EBA mock adapter, sources, generation jobs, the study planner and the dashboard, with the PostgreSQL schema and the job queue | All endpoints match the OpenAPI contracts and pass their unit and integration tests in CI |
 | D-02 | AI pipeline | Document processing and embedding, retrieval with citations, LLM gateway, summary, quiz and study plan generation | Passes mocked-LLM tests; on the evaluation set at least 80% of answers cite a correct source passage and at least 95% of generated summaries compile to PDF |
-| D-03 | Web frontend | React application in Turkish with student, teacher and administrator views | All main user flows pass the Playwright end-to-end tests; SUS score of at least 70 |
-| D-04 | Deployed system and CI/CD | Docker images, GCP deployment (Cloud Run, Cloud SQL, Cloud Storage) and GitHub Actions pipelines | `main` is deployed automatically; release v1.0.0 runs on GCP |
-| D-05 | Test suite and evaluation dataset | Unit, integration, end-to-end, security and performance tests; mocked LLM fixtures; Turkish/English evaluation questions | At least 80% backend test coverage (course standard); all tests pass on v1.0.0 |
+| D-03 | Web frontend | React application in Turkish with student, teacher and administrator views, with layouts for desktop and phone screens | All main user flows pass the Playwright end-to-end tests; SUS score of at least 70 |
+| D-04 | Deployed system and CI/CD | Docker images, GCP deployment (Cloud Run, Cloud SQL, Cloud Storage) and GitHub Actions pipelines, including the Android build | `main` is deployed automatically and an Android APK is built from it; release v1.0.0 runs on GCP |
+| D-05 | Test suite and evaluation dataset | Unit, integration, end-to-end, mobile, security and performance tests; mocked LLM fixtures; Turkish/English evaluation questions | At least 80% backend test coverage (course standard); all tests pass on v1.0.0 |
 | D-06 | Documentation | Course reports, README, `agents.md`, API documentation and AI usage reports | Each report is released on GitHub by its deadline and reviewed by the TA |
-| D-07 | Demo and final presentation | Demo of v1.0.0 and the final presentation | Demo runs from v1.0.0 on 26.12.2026; presentation given on 28.12.2026 |
+| D-07 | Demo and final presentation | Demo of v1.0.0 on the web and on the Android and iOS applications, and the final presentation | Demo runs from v1.0.0 on 26.12.2026; presentation given on 28.12.2026 |
+| D-08 | Mobile application | Android and iOS application packaged from the web frontend with Capacitor; same Turkish interface, roles and backend API as the web application; file upload and PDF download work on the phone | The APK installs on Android 10 or later and the iOS build on iOS 15 or later; all main user flows pass the mobile smoke tests on an Android emulator in CI and on a real Android phone and iPhone before the demo |
 
 ### 1.3 Functional Requirements / Tasks
 
-Tasks T-02 to T-09 are the in-scope epics of the charter, in the same order. T-01, T-10 and T-11 hold the work that all epics need.
+Tasks T-02 to T-09 are the in-scope epics of the charter, in the same order. T-01, T-10 and T-11 hold the work that all epics need. T-12 was added after the TA review of v1.0, which made the mobile application mandatory.
 
 | Task ID | Functional requirement / task | Description | Related deliverable ID(s) |
 |---|---|---|---|
@@ -80,6 +81,7 @@ Tasks T-02 to T-09 are the in-scope epics of the charter, in the same order. T-0
 | T-09 | Cloud Deployment & CI/CD | The system runs on GCP and is built, tested and deployed automatically | D-04 |
 | T-10 | Testing and quality | Review of AI-drafted code, AI evaluation, security, performance, usability and end-to-end tests | D-05 |
 | T-11 | Documentation and project management | Course reports, customer meetings, request tracking, demo and presentation | D-06, D-07 |
+| T-12 | Mobile Application | Users use all features of Chiron on their phones through an Android and iOS application that packages the web frontend with Capacitor and uses the same backend API and accounts | D-03, D-04, D-05, D-08 |
 
 ### 1.4 Non-functional Issues
 
@@ -87,8 +89,9 @@ Tasks T-02 to T-09 are the in-scope epics of the charter, in the same order. T-0
 |---|---|---|
 | Security and privacy | Passwords are hashed; JWT sessions; every endpoint checks role and assignment; only the data the features need is stored and students' personal data is handled according to KVKK (no real student data in development); API keys kept in secrets; uploaded documents are treated as untrusted input (prompt-injection defense) | Authorization tests for each role including cross-user access (WBS-2.2, WBS-7.1); privacy and prompt-injection tests (WBS-10.3) |
 | Performance | Normal API calls answer within about 1 second with 20 users at the same time; a cited answer starts within 10 seconds; summary and quiz jobs show their status and finish within 2 minutes | Simple load test on the deployed system (WBS-10.3) |
-| Usability | Turkish interface; generated answers and study material are in Turkish; clear navigation for each role; System Usability Scale (SUS) score of at least 70 | Usability sessions with at least 5 students and the SUS questionnaire (WBS-10.4) |
+| Usability | Turkish interface; generated answers and study material are in Turkish; clear navigation for each role; all pages usable on phone screens from 360 px wide; System Usability Scale (SUS) score of at least 70 | Usability sessions with at least 5 students and the SUS questionnaire (WBS-10.4); mobile viewport tests (WBS-12.2) |
 | Accessibility | Keyboard navigation, sufficient contrast, labels and alternative texts (WCAG 2.1 AA basics) | Lighthouse accessibility score of at least 90 on every page and a keyboard-only walkthrough of the main flows (WBS-10.4) |
+| Portability | The mobile application runs on Android 10 and later and on iOS 15 and later and offers the same features as the web application, using the same backend API and accounts; login tokens are kept in secure storage on the device | Smoke tests on an Android emulator in CI and on the iOS simulator (WBS-12.2), and a check on a real Android phone and iPhone before the demo (WBS-10.5) |
 | Reliability | If an LLM provider returns an error, rate-limits or times out, the gateway retries and falls back to another provider; a generation job that fails (e.g. LaTeX does not compile, invalid output, all providers unavailable) or runs longer than 2 minutes is marked as failed and the user sees an error message | Provider-failure and job-failure tests (WBS-8.2, WBS-5.2) |
 | Cost | Token usage recorded per student; monthly budget limit enforced | Budget limit tests (WBS-8.2); token usage on the dashboard |
 | Maintainability | At least 80% backend test coverage (course standard); linters; every change reviewed in a PR | Coverage and lint checks in CI (WBS-1.4, WBS-1.5); PR review (WBS-10.1) |
@@ -106,7 +109,7 @@ Tasks T-02 to T-09 are the in-scope epics of the charter, in the same order. T-0
 | WBS-1.3 | T-01 | Repository scaffolding | Backend and frontend skeleton, linters, README, `agents.md`; the project builds and runs locally | T |
 | WBS-1.4 | T-01 | CI pipeline | GitHub Actions runs linters and tests on every PR; branch protection on `main` | T |
 | WBS-1.5 | T-01 | Test infrastructure | pytest and Vitest setup, mocked LLM and provider fixtures, coverage report in CI | S |
-| WBS-1.6 | T-01 | Frontend foundation | App shell, routing, API client generated from the contracts, Turkish interface texts, accessible shared components | S |
+| WBS-1.6 | T-01 | Frontend foundation | App shell, routing, API client generated from the contracts, Turkish interface texts, accessible shared components, responsive layout for desktop and phone screens | S |
 | WBS-1.7 | T-01 | Background job queue | Redis and a worker for long-running generation, job status API, time limits and failure states | S |
 | WBS-2.1 | T-02 | Access and privacy design | Role and assignment access matrix; which personal data is stored and how (KVKK) | S |
 | WBS-2.2 | T-02 | Authorization tests | Tests for each role, including attempts to access other users' data | S |
@@ -141,19 +144,23 @@ Tasks T-02 to T-09 are the in-scope epics of the charter, in the same order. T-0
 | WBS-10.2 | T-10 | AI evaluation | About 50 Turkish/English questions with expected sources; answer, citation and summary quality measured | M |
 | WBS-10.3 | T-10 | Security, privacy and performance tests | Access-control and personal-data checks, prompt-injection tests, load test on the deployed system | S |
 | WBS-10.4 | T-10 | Usability and accessibility check | Sessions with at least 5 students (SUS questionnaire) and an accessibility check of all pages | T |
-| WBS-10.5 | T-10 | End-to-end tests and stabilization | Playwright tests for all main flows; bugs fixed before the code freeze | M |
+| WBS-10.5 | T-10 | End-to-end tests and stabilization | Playwright tests for all main flows, a check of the mobile application on a real Android phone and iPhone; bugs fixed before the code freeze | M |
 | WBS-10.6 | T-10 | Integration of AI-drafted code | Completing, fixing and integrating the AI agent's code drafts so that they work with the rest of the system | M |
 | WBS-11.1 | T-11 | Project Plan | This document | T |
 | WBS-11.2 | T-11 | Requirements elicitation and specification | Customer meeting preparation, user stories with acceptance criteria, Requirements Spec document | M |
-| WBS-11.3 | T-11 | Wireframes and UI design | Wireframes and clickable prototype for all pages and roles; navigation and accessibility rules | M |
+| WBS-11.3 | T-11 | Wireframes and UI design | Wireframes and clickable prototype for all pages and roles, for desktop and phone screens; navigation and accessibility rules | M |
 | WBS-11.4 | T-11 | Requirements analysis | Analysis models (use cases, sequence and domain models), Requirements Analysis document | M |
 | WBS-11.5 | T-11 | Design Specification | Architecture, API, database and AI pipeline design document | M |
 | WBS-11.6 | T-11 | Test Specification | Test plan, test cases and results so far; final end-to-end results are added to the release notes of v1.0.0 | S |
 | WBS-11.7 | T-11 | Demo and final presentation | Demo from v1.0.0 (26.12) and the final presentation (28.12) | S |
 | WBS-11.8 | T-11 | Project management | Iteration planning, board tracking, customer meeting follow-up and `customer-requests` issues, AI usage records | S |
+| WBS-12.1 | T-12 | Mobile application design | Which flows and screens the application has, phone layouts, Capacitor setup (API address, secure token storage, file picker, PDF download and opening, Android back button), Android and iOS build and signing | S |
+| WBS-12.2 | T-12 | Mobile tests | Playwright tests of the main flows on phone screen sizes and smoke tests of the APK on an Android emulator in CI and of the iOS build on the iOS simulator | S |
+| WBS-12.3 | T-12 | Capacitor application and mobile builds | The web frontend packaged with Capacitor for Android and iOS, native plugins for files and secure storage, a CI job that builds the APK from `main`, the iOS build made with Xcode on a Mac | S |
+| WBS-12.4 | T-12 | Mobile adjustments of the pages | All pages checked and fixed on phone screens and inside the Android and iOS applications, mobile navigation | S |
 
 **WBS decomposition notes:**
-Each charter epic (T-02 to T-09) is split into design, test and build activities. For each feature we first design it, then write the tests, then build it (test-first). Pages are separate activities for the frontend developer and start after the wireframes are done (WBS-11.3). Architecture and API contracts (WBS-1.1) come first so that frontend and backend can work in parallel. Reviewing the AI agent's PRs (WBS-10.1) and integrating its code (WBS-10.6) run in the weeks with the most build work.
+Each charter epic (T-02 to T-09) is split into design, test and build activities. For each feature we first design it, then write the tests, then build it (test-first). Pages are separate activities for the frontend developer and start after the wireframes are done (WBS-11.3). The mobile application (T-12) reuses the web pages: it is designed early so that the frontend foundation and the pages are built responsive from the start, and it is packaged and adjusted once the pages exist. Architecture and API contracts (WBS-1.1) come first so that frontend and backend can work in parallel. Reviewing the AI agent's PRs (WBS-10.1) and integrating its code (WBS-10.6) run in the weeks with the most build work.
 
 > **Course guideline note:** User stories for these subtasks will be written in the separate requirements document; this project plan defines and sizes the subtasks.
 
@@ -213,7 +220,11 @@ Each charter epic (T-02 to T-09) is split into design, test and build activities
 | WBS-11.6 | S | 0.5 | Most tests already exist because we write them first (AI 0.15 / us 0.35) |
 | WBS-11.7 | S | 0.5 | Demo script and slides |
 | WBS-11.8 | S | 0.5 | About 2 hours a week from the project manager |
-| **Total** | — | **27** | AI 9.45 / us 17.55 |
+| WBS-12.1 | S | 0.5 | Covers both the phone layouts and the Capacitor decisions, which are new to us |
+| WBS-12.2 | S | 0.5 | Reuses the Playwright tests with phone screen sizes; emulator setup in CI is the new part (AI 0.2 / us 0.3) |
+| WBS-12.3 | S | 0.5 | Capacitor wraps the existing Vite build, and Android and iOS share the same configuration, so most of the work is configuration (AI 0.4 / us 0.1) |
+| WBS-12.4 | S | 0.5 | Small layout fixes on about ten pages, since they are built responsive from the start (AI 0.4 / us 0.1) |
+| **Total** | — | **29** | AI 10.45 / us 18.55 |
 
 **Estimation method:**
 We sized each activity by expert judgment and converted the sizes with a fixed scale: T = 0.25, S = 0.5, M = 1, L = 2, XL = 3 man-weeks. We then subtract the AI agent's share from each activity: 80% of coding activities, 40% of test-writing activities and 30% of the course reports. The team's remaining effort covers prompting, checking and completing the AI's drafts; reviewing AI-drafted PRs (WBS-10.1) and integrating the AI's code (WBS-10.6) are estimated separately at 1 man-week each, about 21% of the AI's output. These are early estimates; we will revise them after the Requirements Specification, when the requirements are clearer.
@@ -222,13 +233,13 @@ We sized each activity by expert judgment and converted the sizes with a fixed s
 
 | Phase | Team effort (man-weeks) | Share of team effort | Total incl. AI agent (man-weeks) | Share of total |
 |---|---|---|---|---|
-| Analysis & design | 8.1 | 50% | 9 | 35% |
-| Coding | 2.5 | 15% | 8.5 | 33% |
-| Testing (incl. review) | 5.7 | 35% | 8.25 | 32% |
+| Analysis & design | 8.6 | 50% | 9.5 | 34% |
+| Coding | 2.7 | 15% | 9.5 | 34% |
+| Testing (incl. review) | 6.0 | 35% | 8.75 | 32% |
 | Management (plan, demo, project management) | 1.25 | — | 1.25 | — |
-| **Total** | **17.55** | 100% | **27** | 100% |
+| **Total** | **18.55** | 100% | **29** | 100% |
 
-**Capacity check:** 5 members x 0.4 FTE x 10 weeks (19.10 - 25.12) = 20 man-weeks for activities, plus 0.5 man-weeks of project management (WBS-11.8). The team's planned effort in this period is 16.9 man-weeks, which leaves about 3.1 man-weeks (about 15%) as buffer for requirement changes, busy exam weeks and integration problems.
+**Capacity check:** 5 members x 0.4 FTE x 10 weeks (19.10 - 25.12) = 20 man-weeks for activities, plus 0.5 man-weeks of project management (WBS-11.8). The team's planned effort in this period is 17.9 man-weeks, which leaves about 2.1 man-weeks (about 10%) as buffer for requirement changes, busy exam weeks and integration problems. Adding the mobile application (1 man-week of team effort) reduced the buffer from 3.1 man-weeks in v1.0.
 
 **Effort versus duration:** If an activity requires **2 man-weeks** and **2 fully allocated team members** can work in parallel, its estimated duration is **1 week** (assuming no other constraints). Here, durations are the team's effort divided by the team members' allocation; for coding activities the AI agent works in parallel with the assigned member. For example, WBS-4.3 is 0.5 man-weeks of work: the AI agent drafts 0.4 man-weeks and Metin does the remaining 0.1 man-weeks at 0.1 FTE, so it takes 1 week.
 
@@ -240,11 +251,11 @@ We sized each activity by expert judgment and converted the sizes with a fixed s
 
 | Member | Student ID | Role(s) | Main responsibilities |
 |---|---|---|---|
-| Burak Emre Polat | 150230328 | Backend / DevOps Developer, Project Manager | Leads the architecture and database design, designs access and privacy and the LLM gateway, helps Hasan design the study planner, and builds authentication, the gateway and summary generation. Runs the security and performance tests and writes the Design Spec with Metin. As project manager he plans the weeks, keeps the board up to date, talks to the TA and prepares the demo. |
-| Metin Furkan Amarat | 150230301 | Backend / RAG Engineer, Test Lead | Works on the architecture, designs document processing and retrieval with Berkay, and builds upload/embedding and the cited Q&A service. As Test Lead he sets up the test infrastructure, writes the RAG tests and the Test Spec with Berkay, and helps with the AI evaluation and end-to-end tests. Co-writes the Design Spec. |
-| Hasan Yalçın Arıkanoğlu | 150220341 | AI / Study Planner Engineer, Requirements Analyst | Designs the portal data, the study planner (with Burak) and the summaries and quizzes (with Faruk), and builds the planner service, quiz generation and the dashboard API. As Requirements Analyst he writes the Requirements Spec and Analysis, turns customer requests into issues and helps run the usability sessions. |
+| Burak Emre Polat | 150230328 | Backend / DevOps Developer, Project Manager | Leads the architecture and database design, designs access and privacy and the LLM gateway, helps Hasan design the study planner, and builds authentication, the gateway and summary generation. Runs the security and performance tests, helps design the mobile application (Capacitor setup) and writes the Design Spec with Metin. As project manager he plans the weeks, keeps the board up to date, talks to the TA and prepares the demo. |
+| Metin Furkan Amarat | 150230301 | Backend / RAG Engineer, Test Lead | Works on the architecture, designs document processing and retrieval with Berkay, and builds upload/embedding and the cited Q&A service. As Test Lead he sets up the test infrastructure, writes the RAG tests, the mobile tests and the Test Spec with Berkay, and helps with the AI evaluation and end-to-end tests. Co-writes the Design Spec. |
+| Hasan Yalçın Arıkanoğlu | 150220341 | AI / Study Planner Engineer, Requirements Analyst | Designs the portal data, the study planner (with Burak) and the summaries and quizzes (with Faruk), and builds the planner service, quiz generation and the dashboard API. Leads the mobile application design and builds the Capacitor application. As Requirements Analyst he writes the Requirements Spec and Analysis, turns customer requests into issues and helps run the usability sessions. |
 | Berkay Türk | 150220320 | Full-stack Developer, QA / CI-CD & Configuration Manager | Sets up the repository, CI, the job queue and the deployment, builds the adapter and helps with the architecture and retrieval design. As QA / CI-CD manager he writes most of the tests, co-writes the Test Spec, leads the AI evaluation and the end-to-end tests, and manages branch rules and releases. |
-| Abdullah Faruk Özbek | 150220327 | Frontend Developer, UX / Documentation Lead | Builds the frontend foundation and all pages, and designs the summaries and quizzes with Hasan. As UX / Documentation Lead he does the wireframes and the usability check, co-writes the Requirements Spec, tests the adapter, planner and dashboard, keeps the documents consistent and prepares the presentation. |
+| Abdullah Faruk Özbek | 150220327 | Frontend Developer, UX / Documentation Lead | Builds the frontend foundation and all pages, adapts them for phone screens, and designs the summaries and quizzes with Hasan. As UX / Documentation Lead he does the wireframes and the usability check, co-writes the Requirements Spec, tests the adapter, planner and dashboard, keeps the documents consistent and prepares the presentation. |
 | AI Agent (Claude Code) | - | Code, test and documentation drafting | Writes first drafts of about 80% of the code, 40% of the test code and 30% of the reports, always through PRs, and never commits to `main`. Everything it writes is reviewed by one of us (WBS-10.1). |
 
 Everyone also reviews PRs and helps integrate the AI's code (WBS-10.1, WBS-10.6).
@@ -361,13 +372,24 @@ Allocation is the share of a full-time person during the weeks shown. Each membe
 | WBS-11.7 | Burak Emre Polat | Demo & presentation (W10) | 0.25 |
 | WBS-11.7 | Abdullah Faruk Özbek | Demo & presentation (W10) | 0.25 |
 | WBS-11.8 | Burak Emre Polat | Project management (W1-W10) | 0.05 |
+| WBS-12.1 | Hasan Yalçın Arıkanoğlu | Mobile design: flows and screens (W3) | 0.25 |
+| WBS-12.1 | Burak Emre Polat | Mobile design: Capacitor setup and build | W3: 0.05, W4: 0.15 |
+| WBS-12.1 | Abdullah Faruk Özbek | Mobile design: phone layouts (W3) | 0.05 |
+| WBS-12.2 | Metin Furkan Amarat | Mobile tests (W9) | 0.10 |
+| WBS-12.2 | Hasan Yalçın Arıkanoğlu | Mobile tests (W9) | 0.15 |
+| WBS-12.2 | Berkay Türk | Mobile tests (W9) | 0.05 |
+| WBS-12.2 | AI agent | Writes the first draft (W9) | 0.20 |
+| WBS-12.3 | Hasan Yalçın Arıkanoğlu | Capacitor application and mobile builds (W6-W7) | 0.05 |
+| WBS-12.3 | AI agent | Writes the first draft (W6-W7) | 0.20 |
+| WBS-12.4 | Abdullah Faruk Özbek | Mobile adjustments of the pages (W9) | 0.10 |
+| WBS-12.4 | AI agent | Writes the first draft (W9) | 0.40 |
 
 Week numbers: W0 = 12.10, W1 = 19.10, W2 = 26.10, W3 = 02.11, W4 = 09.11, W5 = 16.11, W6 = 23.11, W7 = 30.11, W8 = 07.12, W9 = 14.12, W10 = 21.12 (week start dates).
 
 **Availability or allocation constraints:**
 - Each of us can put about 0.4 FTE (around 16 hours a week) into the project next to other courses. Burak spends about 2 more hours a week on project management.
 - Hasan and Faruk write the Requirements Spec in W1-W2, Faruk does the wireframes in W3-W5, Hasan writes the Requirements Analysis in W4-W5, Burak and Metin write the Design Spec in W6-W7 and Metin and Berkay write the Test Spec in W8-W9. Other work is planned around these weeks.
-- Everyone has a few free hours (at least 4 a week) in some weeks: Burak in W4 and W10, Metin in W2, W4, W9 and W10, Hasan in W3, W9 and W10, Berkay in W10 and Faruk in W1, W2 and W9. We keep these as buffer for integration, bug fixes and customer change requests.
+- The mobile application (T-12) was added in v1.1 and planned into the free hours of v1.0, so fewer free hours are left: Burak in W10, Metin in W2, W4 and W10, Hasan in W10, Berkay in W10 and Faruk in W1, W2 and W9 (at least 4 hours a week each). We keep these as buffer for integration, bug fixes and customer change requests.
 
 ---
 
@@ -418,6 +440,10 @@ flowchart LR
     W10_3["WBS-10.3<br/>Security & performance tests<br/>2w, ES 6, LS 7, float 1"]
     W10_4["WBS-10.4<br/>Usability check<br/>1w, ES 6, LS 8, float 2"]
     W10_5["WBS-10.5<br/>E2E & stabilization<br/>1w, ES 8, LS 8, float 0"]
+    W12_1["WBS-12.1<br/>Mobile design<br/>2w, ES 2, LS 3, float 1"]
+    W12_2["WBS-12.2<br/>Mobile tests<br/>1w, ES 4, LS 8, float 4"]
+    W12_3["WBS-12.3<br/>Capacitor app & mobile builds<br/>2w, ES 4, LS 5, float 1"]
+    W12_4["WBS-12.4<br/>Mobile adjustments of pages<br/>1w, ES 6, LS 7, float 1"]
     FREEZE((Code freeze<br/>25.12))
     W11_7["WBS-11.7<br/>Demo & presentation<br/>26-28.12"]
     FINISH((Finish))
@@ -507,7 +533,18 @@ flowchart LR
     W7_3 --> W10_5
     W9_2 --> W10_5
     W10_2 --> W10_5
-    W2_2 & W3_2 & W4_2 & W5_2 & W6_2 & W7_1 & W8_2 & W10_3 & W10_4 & W10_5 --> FREEZE
+    W1_1 --> W12_1
+    W1_6 --> W12_1
+    W12_1 --> W12_2
+    W1_5 --> W12_2
+    W12_1 --> W12_3
+    W1_4 --> W12_3
+    W12_1 --> W12_4
+    W12_3 --> W12_4
+    W2_4 & W4_5 & W5_5 & W6_4 & W7_3 --> W12_4
+    W12_3 --> W10_5
+    W12_4 --> W10_5
+    W2_2 & W3_2 & W4_2 & W5_2 & W6_2 & W7_1 & W8_2 & W12_2 & W10_3 & W10_4 & W10_5 --> FREEZE
     FREEZE --> W11_7 --> FINISH
 
     subgraph Documents
@@ -515,7 +552,7 @@ flowchart LR
         W11_2 --> W11_4["WBS-11.4<br/>Req. Analysis<br/>23.11"]
         W11_3 & W11_4 --> W11_5["WBS-11.5<br/>Design Spec<br/>07.12"] --> W11_6["WBS-11.6<br/>Test Spec<br/>21.12"]
     end
-    W11_3 -.-> W2_4 & W4_5 & W5_5 & W6_4 & W7_3
+    W11_3 -.-> W2_4 & W4_5 & W5_5 & W6_4 & W7_3 & W12_4
     W11_6 --> W11_7
 
     classDef critical fill:#ffe1e1,stroke:#d33,stroke-width:3px;
@@ -567,6 +604,10 @@ Durations come from Sections 3 and 4.2 (team effort / team allocation). ES and E
 | WBS-10.3 | 2 | 6 | 8 | 7 | 9 | 1 | W8-W9 |
 | WBS-10.4 | 1 | 6 | 7 | 8 | 9 | 2 | W9 |
 | WBS-10.5 | 1 | 8 | 9 | 8 | 9 | 0 | W10 |
+| WBS-12.1 | 2 | 2 | 4 | 3 | 5 | 1 | W3-W4 |
+| WBS-12.2 | 1 | 4 | 5 | 8 | 9 | 4 | W9 |
+| WBS-12.3 | 2 | 4 | 6 | 5 | 7 | 1 | W6-W7 |
+| WBS-12.4 | 1 | 6 | 7 | 7 | 8 | 1 | W9 |
 
 ### 5.2 Critical Path and Total Project Duration
 
@@ -594,7 +635,7 @@ Durations come from Sections 3 and 4.2 (team effort / team allocation). ES and E
 **Total project schedule:** **11 weeks**, from **2026-10-12** to **2026-12-28** (10 weeks of development up to the code freeze on 25.12.2026).
 
 **Critical-path explanation:**
-The critical paths are the longest chains in the network, so they have zero float. Several chains are 9 weeks long, because the cited Q&A service (WBS-4.4) needs both the processing chain and the gateway chain, and both depend on the database design. The code freeze allows 10 weeks, so the critical path has 1 week of schedule reserve. Because members work part-time on several activities, the planned schedule uses this reserve: as planned, the following activities have no slack left before the freeze: WBS-1.7, WBS-4.3, WBS-4.4, WBS-5.1, WBS-5.3, WBS-8.3, WBS-10.2, WBS-10.5. If one of them slips, the free hours listed in Section 4.2 are moved to it; if that is not enough, we simplify a must-have feature after agreeing with the customer.
+The critical paths are the longest chains in the network, so they have zero float. Several chains are 9 weeks long, because the cited Q&A service (WBS-4.4) needs both the processing chain and the gateway chain, and both depend on the database design. The code freeze allows 10 weeks, so the critical path has 1 week of schedule reserve. Because members work part-time on several activities, the planned schedule uses this reserve: as planned, the following activities have no slack left before the freeze: WBS-1.7, WBS-4.3, WBS-4.4, WBS-5.1, WBS-5.3, WBS-8.3, WBS-10.2, WBS-10.5, WBS-12.4. The mobile activities (T-12) are not on the critical path, because the mobile application reuses the web pages and only its last adjustments wait for them. If one of them slips, the free hours listed in Section 4.2 are moved to it; if that is not enough, we simplify a must-have feature after agreeing with the customer.
 
 ### 5.3 Gantt Chart — Project Timeline
 
@@ -659,6 +700,12 @@ gantt
     WBS-9.1 Deployment design               :w9_1, 2026-11-16, 1w
     WBS-9.2 Docker & GCP                    :w9_2, 2026-11-23, 2w
 
+    section Mobile application
+    WBS-12.1 Mobile design                  :w12_1, 2026-11-02, 2w
+    WBS-12.2 Mobile tests                   :w12_2, 2026-12-14, 1w
+    WBS-12.3 Capacitor app & mobile builds   :w12_3, 2026-11-23, 2w
+    WBS-12.4 Mobile adjustments of pages    :w12_4, 2026-12-14, 1w
+
     section Testing & quality
     WBS-10.1 PR review                      :w10_1, 2026-11-16, 5w
     WBS-10.6 Integration of AI code         :w10_6, 2026-11-16, 5w
@@ -691,7 +738,7 @@ gantt
 - The WBS IDs are the same in Sections 2, 3, 4.2 and 5 (WBS-10.1, WBS-10.6, WBS-11.1 and WBS-11.8 run over many weeks, so they are not in the PERT chart).
 - Each Gantt bar matches the effort and allocation in Sections 3 and 4.2 and starts after its predecessors: tests before their builds, wireframes and feature designs before pages.
 - No one is planned above 0.4 FTE in any week (plus 0.05 FTE project management for Burak), and every report ends on its deadline.
-- Planned team effort (16.9 man-weeks) fits in the 20 man-week capacity with about 3.1 man-weeks of buffer; the team's effort split is 50% analysis and design, 15% coding and 35% testing.
+- Planned team effort (17.9 man-weeks) fits in the 20 man-week capacity with about 2.1 man-weeks of buffer; the team's effort split is 50% analysis and design, 15% coding and 35% testing.
 
 ---
 
@@ -714,12 +761,13 @@ gantt
 | R-11 | Requirements change after customer meetings | 4 | 3 | 12 | WBS-11.2, WBS-11.4, affected build activities |
 | R-12 | Exams and other courses reduce available time | 4 | 3 | 12 | WBS-4.4, WBS-5.3, WBS-10.2 |
 | R-13 | LLM output is unreliable (wrong citations, poor summaries, quizzes or plans) | 4 | 4 | 16 | WBS-4.4, WBS-5.3, WBS-5.4, WBS-6.3, WBS-10.2 |
+| R-14 | Parts of the web frontend do not work inside the Android or iOS application (file upload, PDF download, login storage, layouts) | 3 | 3 | 9 | WBS-12.3, WBS-12.4, WBS-10.5 |
 
 | Impact ↓ / Probability → | 1 (Very low) | 2 (Low) | 3 (Medium) | 4 (High) | 5 (Very high) |
 |---|---|---|---|---|---|
 | **1 — Very low** | — | — | — | — | — |
 | **2 — Low** | — | — | — | — | — |
-| **3 — Medium** | — | R-01, R-02 | R-05, R-06 | R-11, R-12 | — |
+| **3 — Medium** | — | R-01, R-02 | R-05, R-06, R-14 | R-11, R-12 | — |
 | **4 — High** | — | R-03, R-04 | R-07, R-08, R-09 | R-13 | — |
 | **5 — Very high** | — | — | R-10 | — | — |
 
@@ -740,4 +788,5 @@ gantt
 | R-11 | WBS-11.2, WBS-11.4 | Every request recorded as a `customer-requests` issue within 48 hours and planned into the next weeks; buffer kept free | Hasan Yalçın Arıkanoğlu | Defer or decline requests that do not fit, with the reasoning written in the issue |
 | R-12 | WBS-4.4, WBS-5.3, WBS-10.2 | Reports are started two or more weeks before their deadline; everyone marks their busy weeks on the board early | Burak Emre Polat | The free hours listed in Section 4.2 (mostly W9-W10) go to evaluation and testing work |
 | R-13 | WBS-4.4, WBS-5.3, WBS-5.4, WBS-6.3, WBS-10.2 | Answers grounded in retrieved sources with citations; evaluation dataset with acceptance thresholds (D-02); validation of generated LaTeX, quizzes and plans before they are shown | Metin Furkan Amarat | Fall back to simpler outputs (e.g. rule-based study plan hours, fewer generated questions) and show a clear error when generation fails |
+| R-14 | WBS-12.3, WBS-12.4, WBS-10.5 | Capacitor chosen so that the application reuses the web code; mobile design done early (W3-W4) so that pages are built responsive; Android and iOS builds and the emulator and simulator smoke tests set up in W6-W7, well before the freeze; official Capacitor plugins for files and secure storage | Hasan Yalçın Arıkanoğlu | Use the free hours in W10 for fixes; a feature that cannot be fixed in time opens in the phone's browser from the application, after agreeing with the customer |
 
