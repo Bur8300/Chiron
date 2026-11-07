@@ -64,7 +64,8 @@ Before you change files in a folder, read the `AGENTS.md` file in that folder.
 7. Write `Closes #<issue number>` in the PR description.
 8. Move the issue to "In Review".
 9. Ask your reviewer for a review (see the review pairs in section 6).
-10. Merge the PR after one approval from a team member.
+10. The PR author merges the PR after one approval from the reviewer. Use a merge commit. Do not use squash.
+    For a course document, merge only after all TA comments are resolved.
 
 ## 5. Branch names
 
