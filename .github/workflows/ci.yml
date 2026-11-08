@@ -1,0 +1,52 @@
+name: CI
+
+# No path filters: the jobs become required checks on main,
+# and a skipped required check blocks the PR (for example a docs-only PR).
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10
+        with:
+          enable-cache: true
+      - run: uv sync --locked
+      - run: uv run ruff check . ../tests/backend
+      - run: uv run ruff format --check . ../tests/backend
+      - run: uv run pytest
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint -- --deny-warnings
+      # oxlint rejects "../" paths, so lint the root tests/frontend folder from the repo root.
+      - run: frontend/node_modules/.bin/oxlint --deny-warnings -c frontend/.oxlintrc.json tests/frontend
+        working-directory: .
+      - run: npm test
+      - run: npm run build
