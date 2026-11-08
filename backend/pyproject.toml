@@ -1,0 +1,25 @@
+[project]
+name = "chiron-backend"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi[standard]>=0.162.2",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.2.0",
+    "ruff>=0.17.4",
+]
+
+[tool.pytest.ini_options]
+# Tests live in the root tests/ folder (AGENTS.md section 2).
+testpaths = ["../tests/backend"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 100
+src = [".", "../tests/backend"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
