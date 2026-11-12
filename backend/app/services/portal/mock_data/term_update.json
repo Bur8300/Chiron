@@ -1,0 +1,39 @@
+{
+  "users_added": [
+    {"portal_id": "OGR-1031", "role": "student", "first_name": "Ömer", "last_name": "Yıldız", "class_id": "10-A"},
+    {"portal_id": "OGR-1032", "role": "student", "first_name": "Duru", "last_name": "Sarı", "class_id": null}
+  ],
+  "student_teacher": [
+    {"student_id": "OGR-1031", "course_id": "KIM10", "teacher_id": "OGT-2001"},
+    {"student_id": "OGR-1031", "course_id": "MAT10", "teacher_id": "OGT-2003"},
+    {"student_id": "OGR-1031", "course_id": "FIZ10", "teacher_id": "OGT-2004"},
+    {"student_id": "OGR-1005", "course_id": "KIM10", "teacher_id": "OGT-2002"}
+  ],
+  "student_admin": [
+    {"student_id": "OGR-1031", "admin_id": "YON-3001"},
+    {"student_id": "OGR-1032", "admin_id": "YON-3002"}
+  ],
+  "assessments_added": [
+    {"assessment_id": "FIZ10-10A-KS2", "course_id": "FIZ10", "class_id": "10-A", "teacher_id": "OGT-2004", "title": "2. Kısa Sınav", "type": "quiz", "date": "2026-11-18", "topics": [{"topic_id": "FIZ10-U1-T4", "max_points": 20}]}
+  ],
+  "grades_added": [
+    {"assessment_id": "FIZ10-10A-KS2", "student_id": "OGR-1001", "topic_id": "FIZ10-U1-T4", "points": 17},
+    {"assessment_id": "FIZ10-10A-KS2", "student_id": "OGR-1002", "topic_id": "FIZ10-U1-T4", "points": 17},
+    {"assessment_id": "FIZ10-10A-KS2", "student_id": "OGR-1003", "topic_id": "FIZ10-U1-T4", "points": 11},
+    {"assessment_id": "FIZ10-10A-KS2", "student_id": "OGR-1004", "topic_id": "FIZ10-U1-T4", "points": 13},
+    {"assessment_id": "FIZ10-10A-KS2", "student_id": "OGR-1005", "topic_id": "FIZ10-U1-T4", "points": 14},
+    {"assessment_id": "FIZ10-10A-KS2", "student_id": "OGR-1006", "topic_id": "FIZ10-U1-T4", "points": 16},
+    {"assessment_id": "FIZ10-10A-KS2", "student_id": "OGR-1007", "topic_id": "FIZ10-U1-T4", "points": 16},
+    {"assessment_id": "FIZ10-10A-KS2", "student_id": "OGR-1008", "topic_id": "FIZ10-U1-T4", "points": 9},
+    {"assessment_id": "FIZ10-10A-KS2", "student_id": "OGR-1009", "topic_id": "FIZ10-U1-T4", "points": 14},
+    {"assessment_id": "FIZ10-10A-KS2", "student_id": "OGR-1010", "topic_id": "FIZ10-U1-T4", "points": 13},
+    {"assessment_id": "FIZ10-10A-KS2", "student_id": "OGR-1011", "topic_id": "FIZ10-U1-T4", "points": 16},
+    {"assessment_id": "FIZ10-10A-KS2", "student_id": "OGR-1012", "topic_id": "FIZ10-U1-T4", "points": 17},
+    {"assessment_id": "FIZ10-10A-KS2", "student_id": "OGR-1013", "topic_id": "FIZ10-U1-T4", "points": 16},
+    {"assessment_id": "FIZ10-10A-KS2", "student_id": "OGR-1014", "topic_id": "FIZ10-U1-T4", "points": 13},
+    {"assessment_id": "FIZ10-10A-KS2", "student_id": "OGR-1015", "topic_id": "FIZ10-U1-T4", "points": 16}
+  ],
+  "grades_changed": [
+    {"assessment_id": "KIM10-10B-Y1", "student_id": "OGR-1016", "topic_id": "KIM10-U1-T1", "points": 20}
+  ]
+}
