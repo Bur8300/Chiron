@@ -1,0 +1,131 @@
+export const tr = {
+  brand: "Chiron",
+  tagline: "Öğrenmek için bir alan.",
+  skip: "İçeriğe geç",
+  preview: "Önizleme",
+  previewNote:
+    "Örnek arayüzü inceliyorsun. Hesap girişi yapılmaz ve kişisel veri gösterilmez.",
+  back: "Giriş sayfasına dön",
+  openMenu: "Menüyü aç",
+  closeMenu: "Menüyü kapat",
+  workspace: "Öğrenme alanın",
+  explore: "Çalışma araçları",
+  exploreNote: "İlgili alanları açarak önizlemeye devam et.",
+  open: "İncele",
+  comingSoon: "Bu alan hazırlanıyor",
+  comingSoonNote:
+    "Hazır olduğunda derslerin ve çalışma içeriklerin burada görünecek.",
+  noData: "Henüz gösterilecek veri yok",
+  noDataNote: "Bu önizlemede öğrenci verisi veya çalışma sonucu bulunmuyor.",
+  roles: { student: "Öğrenci", teacher: "Öğretmen", admin: "Yönetici" },
+  navigation: {
+    student: "Çalışma alanı",
+    teacher: "Öğretmen alanı",
+    admin: "Yönetici alanı",
+  },
+  previews: {
+    student: "Öğrenci görünümünü incele",
+    teacher: "Öğretmen görünümünü incele",
+    admin: "Yönetici görünümünü incele",
+  },
+  login: {
+    title: "Öğrenmeye yer aç.",
+    intro:
+      "Ders kaynaklarını bir araya getir. Sorularını sor, öğrendiklerini pekiştir ve kendi çalışma yolunu oluştur.",
+    eyebrow: "Derslerin için çalışma alanı",
+    panelTitle: "Çalışma alanına giriş yap",
+    panelNote: "Okul portalındaki hesabınla devam et.",
+    portalId: "Portal kimliği",
+    password: "Şifre",
+    newPassword: "Yeni şifre",
+    submit: "Giriş yap",
+    unavailable:
+      "Bu bir arayüz önizlemesidir. Giriş ve hesap etkinleştirme henüz kullanılamıyor.",
+    firstTime: "İlk kez mi geliyorsun?",
+    activate: "Hesabını etkinleştir",
+    activateTitle: "İlk adım, hesabın.",
+    activateNote:
+      "Yalnızca okul portalında kayıtlı hesaplar etkinleştirilebilir. Herkese açık kayıt yoktur.",
+    existing: "Zaten bir hesabın var mı?",
+    returnToLogin: "Girişe dön",
+    lookAround: "Arayüz önizlemeleri",
+    sources: "Kaynağı belli yanıtlar",
+    sourcesNote: "Yanıtın dayandığı pasajı gör; öğrenirken kaynağına dön.",
+    pace: "Kendi hızında çalış",
+    paceNote: "Özetler, kısa sınavlar ve haftalık bir planla ilerle.",
+  },
+  pages: {
+    courses: {
+      label: "Derslerim",
+      title: "Derslerin, tek bir yerde.",
+      description: "Bir ders seçerek kaynaklarına ve çalışma araçlarına ulaş.",
+      empty: "Derslerin burada seni bekleyecek",
+      hint: "Okul portalındaki ders, ünite ve konuların bu alanda listelenecek.",
+    },
+    sources: {
+      label: "Kaynaklarım",
+      title: "Kaynaklarınla başla.",
+      description:
+        "Ders notların, sorularının ve çalışmalarının başlangıç noktası.",
+      empty: "İlk kaynağınla bir adım at",
+      hint: "Her ders için en fazla 20 PDF kaynak, dosya başına en fazla 20 MB. Hazır olan kaynaklarını çalışmalarında seçebileceksin.",
+    },
+    questions: {
+      label: "Soru sor",
+      title: "Merak ettiğini sor.",
+      description: "Seçtiğin kaynaklardan, dayanağı gösterilen yanıtlar al.",
+      empty: "İyi bir soru, yeni bir başlangıç",
+      hint: "Yanıtların yanında ilgili kaynak pasajına giden atıflar yer alacak. Kaynakta yanıt yoksa bu açıkça belirtilecek.",
+    },
+    summaries: {
+      label: "Özetlerim",
+      title: "Önemli noktaları bir araya getir.",
+      description: "Seçtiğin kaynaklardan Türkçe özetler oluştur.",
+      empty: "Tekrar etmek için bir alan",
+      hint: "Hazırlanan özetlerini PDF olarak indirip tekrar okuyabileceksin.",
+    },
+    quizzes: {
+      label: "Kısa sınavlar",
+      title: "Öğrendiklerini keşfet.",
+      description: "Kaynaklarına dayanan sorularla bilgini pekiştir.",
+      empty: "Kendini denemeye hazırlan",
+      hint: "5–10 çoktan seçmeli soruyu yanıtladıktan sonra puanını, doğru yanıtları ve kaynak atıflarını görebileceksin.",
+    },
+    planner: {
+      label: "Çalışma planım",
+      title: "Bir sonraki adımın belli olsun.",
+      description: "İhtiyaç duyduğun konulara, sana uygun bir sırayla odaklan.",
+      empty: "Yeni haftaya bir planla başla",
+      hint: "Haftalık planın, gelişime açık konularını ve her konu için çalışma süresini ve adımlarını gösterecek.",
+    },
+    teacher: {
+      label: "Öğrenciler",
+      title: "Öğrencilerinin gelişimini izle.",
+      description:
+        "Sana atanmış öğrencilerin, kendi dersindeki durumunu takip et.",
+      empty: "Öğrencilerin burada görünecek",
+      hint: "Konu bazında başarı oranları ve seçtiğin dönemdeki yapay zekâ token kullanımı burada listelenecek.",
+    },
+    admin: {
+      label: "Öğrenciler",
+      title: "Öğrenmeye birlikte yön ver.",
+      description:
+        "Sana atanmış öğrencilerin tüm derslerdeki gelişimini takip et.",
+      empty: "Genel görünümün hazırlanıyor",
+      hint: "Ders ve sınıfa göre başarı durumunu, seçtiğin dönemdeki yapay zekâ token kullanımını görebileceksin.",
+    },
+    accounts: {
+      label: "Hesap yönetimi",
+      title: "Doğru kişiler, doğru gruplar.",
+      description: "Öğrenci, öğretmen ve yönetici atamalarını düzenle.",
+      empty: "Hesaplar burada yönetilecek",
+      hint: "Portal hesaplarını içe aktarabilecek, atamaları değiştirebilecek ve gerektiğinde hesapları silebileceksin.",
+    },
+  },
+  notFound: {
+    title: "Bu sayfayı bulamadık.",
+    description:
+      "Bağlantı değişmiş olabilir. Başlangıç sayfasından devam edebilirsin.",
+    action: "Başlangıca dön",
+  },
+} as const;
