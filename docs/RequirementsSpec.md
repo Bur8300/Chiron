@@ -517,7 +517,7 @@ flowchart LR
 |---|---|---|---|
 | T-01 | FR-01 | UC-04, UC-06, UC-07 | SC-02, SC-03 |
 | T-02 | FR-02, FR-03, FR-04, FR-05, FR-06, FR-07, FR-08, FR-09 | UC-01, UC-02, UC-09, UC-10 | SC-01, SC-05, SC-06 |
-| T-03 | FR-10, FR-11, FR-12 | UC-01, UC-03, UC-12 | SC-01, SC-04 |
+| T-03 | FR-10, FR-11, FR-12 | UC-01, UC-02, UC-03, UC-12 | SC-01, SC-04 |
 | T-04 | FR-13, FR-14, FR-15, FR-16, FR-17, FR-18, FR-19, FR-20 | UC-04, UC-05 | SC-02 |
 | T-05 | FR-21, FR-22, FR-23, FR-24, FR-25, FR-26 | UC-06, UC-07 | SC-03 |
 | T-06 | FR-27, FR-28, FR-29, FR-30, FR-31 | UC-08, UC-12 | SC-04 |
