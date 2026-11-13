@@ -7,7 +7,7 @@
 | Owner | Abdullah Faruk Özbek |
 | Reviewer | Hasan Yalçın Arıkanoğlu |
 | Draft date | 12 November 2026 |
-| Status | Draft for team review. API client blocked by WBS-1.1. |
+| Status | Original draft approved by Hasan on 12 November. Faruk approved publication of the review fixes on 13 November. Hasan's follow-up review is pending. API client blocked by WBS-1.1. |
 
 ## 1. Purpose and scope
 
@@ -57,7 +57,7 @@ Backend API paths must remain separate from that fallback.
 
 All role pages use `/onizleme/` to show that they are public previews.
 No browser storage contains a session or role claim.
-When authentication is implemented, the team must replace the preview entry flow and enforce access on every API request.
+When authentication is implemented, the team must replace the preview entry flow and enforce access on every API request. [Issue #43](https://github.com/Bur8300/Chiron/issues/43) tracks this handoff.
 Hiding a navigation link is not an authorization control.
 
 | Route | Role / use case |
@@ -80,6 +80,9 @@ Unknown URLs have a recovery link to the login page.
 
 ## 5. Interface decisions
 
+- Follow the charter's Tailwind choice. Use utilities for layout and spacing.
+- Keep shared control styles in Tailwind's `components` layer and global defaults in its `base` layer.
+- The shell grid, navigation rows, header and shortcut list use utilities. Existing component rules remain shared CSS; this is not a full utility rewrite.
 - Use white content surfaces, blue navigation and a navy text color. The proposed palette needs team review.
 - Use system fonts. The app does not request fonts from a third party.
 - Keep one primary heading per page. Move focus to it after navigation.
@@ -87,6 +90,8 @@ Unknown URLs have a recovery link to the login page.
 - Below 761 px, replace the sidebar navigation with an inline expandable menu.
 - The menu button exposes its expanded state. Escape closes it and returns focus to the button.
 - Close the menu when the route changes. It is not a modal and does not trap focus.
+- Keep the shell mounted between pages of the same role. Reset only the menu when the location changes, including history navigation and same-page links.
+- Use plain labels for teacher and administrator pages. Keep the student voice on student pages.
 - Use native links, buttons, inputs and labels. Decorative icons are hidden from assistive technology.
 - Disable motion transitions when reduced motion is requested.
 - Show an explicit preview notice. Do not display fake grades, tokens or learning progress.
@@ -128,7 +133,7 @@ UI/UX Pro Max, Anthropic Frontend Design and Taste Skill supplied design guidanc
 They were the first three Design entries shown on [Skill Issue](https://skill-issue.in/) on 12 November 2026.
 The selected layout is an application workspace. The marketing-page pattern returned by the first search was not used.
 Faruk must review the draft and be able to explain it before pushing, as required by `AGENTS.md`.
-No human review, merge, release or grade is claimed here.
+Hasan approved the original draft in PR #39. Faruk approved publication of the review fixes. Hasan's follow-up review is pending. No merge, release or grade is claimed here.
 
 ## 9. Design refinement plan and review
 

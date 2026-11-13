@@ -110,4 +110,23 @@ describe("public foundation preview", () => {
       screen.getByRole("link", { name: "Başlangıca dön" }).getAttribute("href"),
     ).toBe("/giris");
   });
+
+  test("keeps the shell mounted while closing the menu after navigation", async () => {
+    const user = userEvent.setup();
+    open("/onizleme/ogrenci/dersler");
+    const menuButton = screen.getByRole("button", { name: "Menüyü aç" });
+    const navigation = screen.getByRole("navigation");
+    await user.click(menuButton);
+    expect(menuButton.getAttribute("aria-expanded")).toBe("true");
+    await user.click(within(navigation).getByRole("link", { name: "Soru sor" }));
+    expect(screen.getByRole("button", { name: "Menüyü aç" })).toBe(menuButton);
+    expect(screen.getByRole("navigation")).toBe(navigation);
+    expect(menuButton.getAttribute("aria-expanded")).toBe("false");
+    expect(document.activeElement).toBe(screen.getByRole("heading", { level: 1 }));
+
+    // Selecting the current route must also close the mobile disclosure.
+    await user.click(menuButton);
+    await user.click(within(navigation).getByRole("link", { name: "Soru sor" }));
+    expect(menuButton.getAttribute("aria-expanded")).toBe("false");
+  });
 });

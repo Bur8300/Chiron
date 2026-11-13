@@ -17,6 +17,12 @@ export const tr = {
     "Hazır olduğunda derslerin ve çalışma içeriklerin burada görünecek.",
   noData: "Henüz gösterilecek veri yok",
   noDataNote: "Bu önizlemede öğrenci verisi veya çalışma sonucu bulunmuyor.",
+  staff: {
+    tagline: "Öğrenci takibi ve yönetimi",
+    previewNote: "Arayüz önizlemesidir. Hesap girişi yapılmaz ve kişisel veri gösterilmez.",
+    explore: "İlgili sayfalar",
+    exploreNote: "Diğer yönetim sayfalarının önizlemeleri.",
+  },
   roles: { student: "Öğrenci", teacher: "Öğretmen", admin: "Yönetici" },
   navigation: {
     student: "Çalışma alanı",
@@ -100,26 +106,26 @@ export const tr = {
     },
     teacher: {
       label: "Öğrenciler",
-      title: "Öğrencilerinin gelişimini izle.",
+      title: "Öğrenci takibi",
       description:
-        "Sana atanmış öğrencilerin, kendi dersindeki durumunu takip et.",
-      empty: "Öğrencilerin burada görünecek",
-      hint: "Konu bazında başarı oranları ve seçtiğin dönemdeki yapay zekâ token kullanımı burada listelenecek.",
+        "Atanmış öğrencilerin ilgili dersteki başarı durumu ve token kullanımı.",
+      empty: "Atanmış öğrenciler",
+      hint: "Konu bazında başarı oranları ve seçilen dönemdeki yapay zekâ token kullanımı burada listelenecek.",
     },
     admin: {
       label: "Öğrenciler",
-      title: "Öğrenmeye birlikte yön ver.",
+      title: "Öğrenci genel görünümü",
       description:
-        "Sana atanmış öğrencilerin tüm derslerdeki gelişimini takip et.",
-      empty: "Genel görünümün hazırlanıyor",
-      hint: "Ders ve sınıfa göre başarı durumunu, seçtiğin dönemdeki yapay zekâ token kullanımını görebileceksin.",
+        "Atanmış öğrencilerin tüm derslerdeki başarı durumu ve token kullanımı.",
+      empty: "Genel görünüm hazırlanıyor",
+      hint: "Ders ve sınıfa göre başarı durumu ile seçilen dönemdeki yapay zekâ token kullanımı burada listelenecek.",
     },
     accounts: {
       label: "Hesap yönetimi",
-      title: "Doğru kişiler, doğru gruplar.",
-      description: "Öğrenci, öğretmen ve yönetici atamalarını düzenle.",
+      title: "Hesap ve atama yönetimi",
+      description: "Öğrenci, öğretmen ve yönetici atamaları.",
       empty: "Hesaplar burada yönetilecek",
-      hint: "Portal hesaplarını içe aktarabilecek, atamaları değiştirebilecek ve gerektiğinde hesapları silebileceksin.",
+      hint: "Portal hesaplarını içe aktarma, atama değiştirme ve hesap silme işlemleri burada yer alacak.",
     },
   },
   notFound: {

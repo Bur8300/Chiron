@@ -19,10 +19,10 @@ export function StudyPage({ route }: { route: PageRoute }) {
       {shortcuts.length > 0 && (
         <section className="next-section" aria-labelledby="next-heading">
           <div className="section-heading">
-            <h2 id="next-heading">{tr.explore}</h2>
-            <p>{tr.exploreNote}</p>
+            <h2 id="next-heading">{route.role === "student" ? tr.explore : tr.staff.explore}</h2>
+            <p>{route.role === "student" ? tr.exploreNote : tr.staff.exploreNote}</p>
           </div>
-          <div className="shortcut-list">
+          <div className="grid gap-2">
             {shortcuts.map((item) => (
               <Link className="shortcut-card" key={item.path} to={item.path}>
                 <span className="shortcut-icon">

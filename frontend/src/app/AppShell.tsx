@@ -1,13 +1,29 @@
-import { useRef, useState } from "react";
-import { Link, NavLink, Outlet } from "react-router";
+import { useEffect, useRef, useState } from "react";
+import { Link, NavLink, Outlet, useLocation } from "react-router";
 import { Brand } from "../components/Brand";
 import { Icon } from "../components/Icon";
 import { tr } from "../i18n/tr";
 import { pageRoutes, type Role } from "./routes";
 
 export function AppShell({ role }: { role: Role }) {
-  const [menuOpen, setMenuOpen] = useState(false);
+  const location = useLocation();
+  const [menu, setMenu] = useState({ locationKey: location.key, open: false });
   const menuButton = useRef<HTMLButtonElement>(null);
+
+  // Reset only the disclosure on navigation, including browser history changes.
+  if (menu.locationKey !== location.key) {
+    setMenu({ locationKey: location.key, open: false });
+  }
+  const menuOpen = menu.locationKey === location.key && menu.open;
+
+  function setMenuOpen(open: boolean) {
+    setMenu({ locationKey: location.key, open });
+  }
+
+  useEffect(() => {
+    // A same-page link also closes the menu. Do not leave focus in hidden navigation.
+    document.querySelector<HTMLElement>("h1")?.focus({ preventScroll: true });
+  }, [location.key]);
 
   function closeMenu() {
     setMenuOpen(false);
@@ -16,7 +32,7 @@ export function AppShell({ role }: { role: Role }) {
 
   return (
     <div
-      className="app-shell"
+      className="app-shell min-h-dvh min-[761px]:grid min-[761px]:grid-cols-[224px_minmax(0,1fr)] min-[1101px]:grid-cols-[248px_minmax(0,1fr)]"
       onKeyDown={(event) => {
         if (event.key === "Escape" && menuOpen) closeMenu();
       }}
@@ -53,7 +69,7 @@ export function AppShell({ role }: { role: Role }) {
                   key={route.path}
                   to={route.path}
                   className={({ isActive }) =>
-                    `nav-link ${isActive ? "is-active" : ""}`
+                    `nav-link flex items-center gap-3 ${isActive ? "is-active" : ""}`
                   }
                 >
                   <Icon name={route.icon} />
@@ -63,7 +79,7 @@ export function AppShell({ role }: { role: Role }) {
           </nav>
           <div className="sidebar-note">
             <Icon name="book" />
-            <p>{tr.tagline}</p>
+            <p>{role === "student" ? tr.tagline : tr.staff.tagline}</p>
             <span>{tr.roles[role]}</span>
           </div>
           <Link className="return-link" to="/giris">
@@ -72,14 +88,14 @@ export function AppShell({ role }: { role: Role }) {
           </Link>
         </div>
       </aside>
-      <div className="workspace-body">
-        <header className="workspace-header">
-          <span>{tr.workspace}</span>
+      <div className="workspace-body min-w-0">
+        <header className="workspace-header flex items-center justify-between gap-4">
+          <span>{role === "student" ? tr.workspace : tr.navigation[role]}</span>
           <span className="role-label">{tr.roles[role]}</span>
         </header>
         <div className="preview-banner">
           <span className="preview-badge">{tr.preview}</span>
-          <p>{tr.previewNote}</p>
+          <p>{role === "student" ? tr.previewNote : tr.staff.previewNote}</p>
         </div>
         <main id="main-content" tabIndex={-1}>
           <Outlet />

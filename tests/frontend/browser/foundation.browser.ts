@@ -57,8 +57,19 @@ test("phone menu supports keyboard, Escape and route changes", async ({
   await expect(page.locator("h1")).toBeFocused();
   await expect(page.getByRole("navigation")).toBeHidden();
   await expect(page).toHaveURL(/soru-cevap$/);
+  await menu.click();
+  await page.getByRole("navigation").getByRole("link", { name: "Soru sor" }).click();
+  await expect(page.getByRole("navigation")).toBeHidden();
+  await expect(page.locator("h1")).toBeFocused();
+  await menu.click();
+  // Browser history navigation must also reset an open disclosure.
   await page.goBack();
   await expect(page).toHaveURL(/dersler$/);
+  await expect(page.getByRole("navigation")).toBeHidden();
+  await page.goForward();
+  await expect(page).toHaveURL(/soru-cevap$/);
+  await expect(page.getByRole("navigation")).toBeHidden();
+  await page.goBack();
   await page.reload();
   await expect(
     page.getByRole("heading", { name: "Derslerin, tek bir yerde." }),

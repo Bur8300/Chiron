@@ -29,7 +29,7 @@ export default function App() {
       <Route path="/giris" element={<EntryPage />} />
       <Route path="/hesap-etkinlestir" element={<EntryPage activate />} />
       {(["student", "teacher", "admin"] as Role[]).map((role) => (
-        <Route key={role} element={<AppShell key={pathname} role={role} />}>
+        <Route key={role} element={<AppShell role={role} />}>
           {pageRoutes
             .filter((route) => route.role === role)
             .map((route) => (

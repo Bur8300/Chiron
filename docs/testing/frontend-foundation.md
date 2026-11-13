@@ -1,7 +1,7 @@
 # Frontend foundation validation
 
-**Activity:** WBS-1.6. **Owner:** Abdullah Faruk Özbek. **Date:** 12 November 2026.
-**Status:** Checks completed on the uncommitted draft. Human review is pending.
+**Activity:** WBS-1.6. **Owner:** Abdullah Faruk Özbek. **Date:** 13 November 2026.
+**Status:** Hasan approved the original draft on 12 November. Faruk approved publication of the 13 November review fixes. Hasan's follow-up review is pending.
 
 ## 1. Scope
 
@@ -58,11 +58,11 @@ The team targets Node.js 22. A run on that version remains a CI handoff check.
 
 | Command / inspection | Actual result |
 |---|---|
-| `npm test` | Passed: 8 component tests in 2 files. |
+| `npm test` | Passed: 9 component tests in 2 files. |
 | `npm run typecheck:tests` | Passed. Root-level test imports resolve through `frontend/node_modules`. |
 | `npm run lint` | Passed for frontend code and root-level frontend tests. |
 | `npm run build` | Passed. JavaScript bundle approximately 271 kB, 86 kB gzip. |
-| `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/opt/google/chrome/chrome npm run test:browser` | Passed: 6 browser tests. |
+| `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/google-chrome npm run test:browser` | Passed: 6 browser tests. |
 | Responsive / axe scan | All 12 routes checked at 360, 768 and 1440 px. No horizontal overflow or violations from the selected WCAG A/AA rules were reported. |
 | Phone keyboard flow | Menu open, Escape/focus return, route focus, back and reload passed. |
 | Skip / zoom check | Main-content focus and 200% CSS zoom at an effective 360 px passed. Reduced-motion emulation was enabled. |
@@ -89,6 +89,22 @@ The entry page uses one joined introduction and form panel. On phones, the panel
 The route behavior and preview boundaries stay the same.
 The source skills and the reasons for adapting their guidance are recorded in [the design note](../design/frontend-foundation.md#9-design-refinement-plan-and-review).
 The project checks cover the revised application. Taste Skill's marketing-site checker was not run.
+
+### Review fixes on 13 November
+
+The new shell regression test failed before the fix because navigation replaced the menu button and sidebar.
+It passes after removing the pathname key from `AppShell`.
+The shell now resets only the disclosure state on a new location.
+Same-page links and browser back/forward navigation also close the menu and preserve heading focus.
+
+All nine component tests, test type checking, lint and build passed on the updated draft.
+All six browser tests passed after the style-layer and layout changes.
+The extended phone-menu test passed again after adding same-page and back/forward checks.
+These are local results. No GitHub CI checks were registered on PR #39 at review time.
+
+The styling follows the charter: Tailwind layout utilities plus shared component rules in its cascade layers.
+Teacher and administrator copy now uses plain labels.
+[Issue #43](https://github.com/Bur8300/Chiron/issues/43) tracks replacing or protecting public previews before authentication integration.
 
 ## 6. Remaining acceptance work
 

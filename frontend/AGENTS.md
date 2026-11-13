@@ -19,6 +19,8 @@ Keep code comments and documentation in English.
 - Keep decorative icons out of the accessibility tree.
 - Respect reduced motion.
 - Use shared style tokens. Document new interface decisions in `docs/design/`.
+- Use Tailwind utilities for layout and spacing. Keep shared control styles in the `components` layer of `src/index.css`.
+- Keep global defaults in the `base` layer. Do not add page-specific global overrides.
 - Do not collect credentials or show student data in the public `/onizleme/` routes.
 - Never treat client-side navigation as authorization. The API must enforce access.
 
