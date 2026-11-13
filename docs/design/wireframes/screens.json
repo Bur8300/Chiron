@@ -1,7 +1,7 @@
 {
   "login": {
     "title": "Giriş yap",
-    "refs": "UC-01 · FR-02–FR-06"
+    "refs": "UC-01 · FR-03–FR-06"
   },
   "activation": {
     "title": "Hesabını etkinleştir",
@@ -25,7 +25,7 @@
   },
   "quiz": {
     "title": "Kısa sınav",
-    "refs": "UC-07 · FR-22–FR-24"
+    "refs": "UC-07 · FR-22–FR-25"
   },
   "planner": {
     "title": "Haftalık çalışma planım",

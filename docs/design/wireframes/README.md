@@ -2,7 +2,7 @@
 
 **Activity:** WBS-11.3. **Issue:** [#32](https://github.com/Bur8300/Chiron/issues/32).
 **Owner:** Abdullah Faruk Özbek. **Reviewer:** Hasan Yalçın Arıkanoğlu.
-**Date:** 12 November 2026. **Status:** Proposed layouts for review.
+**Date:** 13 November 2026. **Status:** Proposed layouts for review.
 
 ## Scope and prototype
 
@@ -30,7 +30,7 @@ Run `python3 generate.py` to recreate them from the reviewed screen definitions.
 | Sources | UC-04; FR-13 to FR-17 | [Image](sources-desktop.svg) | [Image](sources-phone.svg) |
 | Questions and citations | UC-05; FR-18 to FR-20, FR-37 | [Image](questions-desktop.svg) | [Image](questions-phone.svg) |
 | Summary | UC-06; FR-21, FR-25 | [Image](summaries-desktop.svg) | [Image](summaries-phone.svg) |
-| Quiz and results | UC-07; FR-22 to FR-24 | [Image](quiz-desktop.svg) | [Image](quiz-phone.svg) |
+| Quiz and results | UC-07; FR-22 to FR-25 | [Image](quiz-desktop.svg) | [Image](quiz-phone.svg) |
 | Weekly plan | UC-08; FR-27 to FR-31 | [Image](planner-desktop.svg) | [Image](planner-phone.svg) |
 
 UC-11 and UC-12 are backend/background flows, not separate student screens.
@@ -73,7 +73,8 @@ Issue #32 lists 22 November; the recovery brief targets this student/login slice
 Confirm the schedule with Burak instead of silently changing it.
 
 Codex drafted these wireframes and notes from Requirements Specification v1.0.
-Faruk's content review and Hasan's PR review are still pending.
+Faruk reviewed the original draft before publication. Hasan approved PR #41 on 12 November and left follow-up comments.
+Faruk approved publication of the 13 November revisions. Hasan's follow-up review is pending.
 No usability study, SUS score or customer approval is claimed.
 
 ## Validation
@@ -82,3 +83,23 @@ All 16 SVG exports loaded in Chrome on 12 November 2026.
 The prototype's eight screen links and both size selectors were checked in a browser.
 The source-page desktop and phone exports were also visually inspected.
 This checks the artifact files and navigation, not student usability or final feature behavior.
+
+## Review fixes on 13 November
+
+- Login uses FR-03 to FR-06 in both the generator and the manifest. Activation keeps FR-02.
+- The quiz screen cites FR-25 and states that a generation error has a message and a retry action.
+- The planner states that a student with no weak topics can try a quiz from their sources (UC-08 A1).
+- Sources show a course selector, upload button, selection controls and ready, processing and failed rows.
+- Questions show a labelled question field, send button, answer, source/page citation and passage.
+- The planner shows a desktop table and stacked phone entries with success rates, hours and study steps.
+
+The sample filenames, answer and passage only show the proposed layout. They are not real sources or AI output.
+The planner's sample rates and topics follow the UC-08 acceptance scenario. Hours follow the FR-29 note.
+Controls inside the SVG images are drawings. The HTML prototype provides screen navigation only.
+Teacher and administrator screens remain outside this slice.
+
+All 16 exports loaded in Chrome on 13 November. Both sizes of all eight screens passed navigation checks.
+Browser checks found no text outside the SVG canvas. Sources, questions and planner were visually inspected at both sizes.
+The question-page footer overlap found during inspection was corrected.
+The generator reproduces the checked-in SVG and manifest files exactly.
+These checks do not replace the student usability study.
