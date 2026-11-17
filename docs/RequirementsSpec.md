@@ -38,7 +38,7 @@ Section 2 lists the functional and non-functional requirements. Section 3 descri
 | FR-05 | T-02 | D-01, D-03 | The system shall answer a wrong portal ID or a wrong password with the same error message, without telling which of the two was wrong. | Must | A wrong ID and a wrong password give exactly the same message |
 | FR-06 | T-02 | D-01, D-03 | The system shall show each user only the pages and functions of their role (student, teacher or administrator). | Must | Authorization tests for each role (WBS-2.2); a student cannot open teacher or administrator pages |
 | FR-07 | T-02 | D-01 | The system shall let a teacher see the data of only the students assigned to them in the subject they teach, and an administrator the data of only the students assigned to them. | Must | Tests try to open data of students who are not assigned and get an access error (WBS-2.2, WBS-7.1) |
-| FR-08 | T-02 | D-01, D-03 | The system shall let an administrator change which students are assigned to which teacher and which teachers are assigned to which administrator. | Must | An administrator moves a student to another teacher and the dashboards change accordingly |
+| FR-08 | T-02 | D-01, D-03 | The system shall let an administrator change which students are assigned to which teacher and to which administrator, and which teachers are assigned to which administrator. | Must | An administrator moves a student to another teacher and the dashboards change accordingly |
 | FR-09 | T-02 | D-01, D-03 | The system shall let an administrator delete a user account together with its uploaded sources and generated material. | Must | After deletion the account cannot log in and its files and results are gone |
 | FR-10 | T-03 | D-01 | The system shall show a student the courses, units and topics of their classes as given in the school portal data. | Must | The student sees exactly the courses and topics of the mock portal data |
 | FR-11 | T-03 | D-01 | The system shall read each student's per-topic grades from the portal when the student logs in and before every weekly planning run. | Must | Change a grade in the mock portal data; it shows after the next login and is used in the next weekly plan |
@@ -522,7 +522,7 @@ flowchart LR
 | T-05 | FR-21, FR-22, FR-23, FR-24, FR-25, FR-26 | UC-06, UC-07 | SC-03 |
 | T-06 | FR-27, FR-28, FR-29, FR-30, FR-31 | UC-08, UC-12 | SC-04 |
 | T-07 | FR-32, FR-33, FR-34 | UC-09, UC-10 | SC-05, SC-06 |
-| T-08 | FR-35, FR-36, FR-37 | UC-11 | SC-08 |
+| T-08 | FR-35, FR-36, FR-37 | UC-05, UC-11, UC-12 | SC-08 |
 | T-09 | None (deployment is NFR-25) | None (all use cases run on the deployed system) | None |
 | T-10 | None (quality work, covered by the non-functional requirements) | None (internal) | None |
 | T-11 | None (documents and project management) | None (internal) | None |
@@ -610,9 +610,9 @@ The administrator is logged in; assignments have been read from the portal data.
   2. The system adds the accounts that are new, with their assignments, and does not change existing assignments.
   3. The flow ends; the new users can activate their accounts (UC-01).
 - **A3 — Move a teacher to another administrator (branches from step 3):**
-  1. The administrator moves one of their teachers, with the teacher's students, to another administrator.
+  1. The administrator moves one of their teachers to another administrator. The teacher's students stay with their current administrator.
   2. The system saves the change.
-  3. The flow continues at step 5 for the other administrator's dashboard.
+  3. The flow ends; if the students should follow the teacher, the administrator moves them to the other administrator one by one (FR-08).
 
 **Exception / error flows (if applicable):**
 
