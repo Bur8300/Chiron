@@ -264,7 +264,7 @@ Rules:
 
 - A teacher sees only the students in `student_teacher` with that teacher, and only in that course (FR-07, FR-32, UC-09).
 - An administrator sees only the students in `student_admin` with that administrator, in all subjects (FR-07, FR-33, UC-10).
-- An administrator manages the teachers in `teacher_admin` with that administrator. The administrator moves students between these teachers (FR-08, UC-02).
+- An administrator manages the teachers in `teacher_admin` with that administrator. The administrator moves students between these teachers, and moves teachers and students to another administrator (FR-08, UC-02). Moving a teacher does not move the teacher's students (UC-02 A3).
 
 Serves: FR-07, FR-08, FR-12, FR-32, FR-33, NFR-03, UC-02, UC-09, UC-10.
 
@@ -487,7 +487,7 @@ uv run python ../tests/backend/test_portal_mock_data.py
 |---|---|---|---|
 | 1 | Is `backend/app/services/portal/mock_data/` the right folder for the data and the generator? The generator is then part of the backend package. | Berkay | Keep it there. The adapter goes in `backend/app/services/portal/` |
 | 2 | Does a student have exactly one administrator? Does a teacher have exactly one administrator? The Requirements Specification does not say. | Hasan, Burak | One administrator each (`student_admin` and `teacher_admin` have the student or the teacher as the key) |
-| 3 | UC-02 A3 moves a teacher to another administrator "with the teacher's students". A student has teachers in several subjects. Which administrator does the student get? | Hasan | Move only the teacher. Change `student_admin` in a separate step |
+| 3 | UC-02 A3 moved a teacher to another administrator "with the teacher's students". A student has teachers in several subjects, so the student's administrator would depend on which teacher moved last. | Hasan | **Decided:** only the teacher moves (`teacher_admin`). The students stay with their administrator, and the administrator moves them one by one (`student_admin`). UC-02 A3 and FR-08 in the Requirements Specification are updated in PR #7 |
 | 4 | When does Chiron read courses, units and topics? FR-10 does not say. | Burak, Berkay | At setup, and add new ones at later imports (Section 4) |
 | 5 | An administrator deletes an account (FR-09), but the student is still in the portal. A later import adds the student again as a new account. Is this right? A list of deleted portal IDs stops this, but it keeps personal data (NFR-04, NFR-06). | Hasan, Burak | Accept it, and write it in the access and privacy design (WBS-2.1) |
 | 6 | Chiron's tables need fields that the portal does not have: account status, password hash, activation time, last grade read time. | Burak | Add them in WBS-1.2. They are not portal data |
