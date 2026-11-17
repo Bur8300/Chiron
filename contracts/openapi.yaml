@@ -165,9 +165,10 @@ paths:
       summary: Log out
       description: |
         The API revokes the refresh token. After this, the session cannot get new access tokens (FR-04).
+        The call needs only the refresh token, so a client can log out also after the access token expired.
+        The API returns `204` also for an unknown or revoked refresh token. It does not tell which tokens exist.
       operationId: logout
-      x-roles: [student, teacher, administrator]
-      x-access: self
+      security: []
       requestBody:
         required: true
         content:
@@ -177,8 +178,8 @@ paths:
       responses:
         "204":
           description: The user is logged out.
-        "401":
-          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/ValidationError"
 
   # ---------------------------------------------------------------- me
   /api/v1/me:
@@ -563,7 +564,9 @@ paths:
     post:
       tags: [jobs]
       summary: Run a failed summary or quiz job again
-      description: The student tries again after a failure (FR-25).
+      description: |
+        The student tries again after a failure (FR-25).
+        Only `summary` and `quiz` jobs can run again. To try a failed source again, the student deletes it and uploads it again (UC-04 E2).
       operationId: retryJob
       x-roles: [student]
       x-access: own
@@ -581,7 +584,11 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
         "409":
-          description: The job did not fail (`job_not_failed`).
+          description: |
+            The job cannot run again:
+            - `job_not_failed`: the job did not fail.
+            - `job_not_retryable`: the job is not a `summary` or `quiz` job.
+            - `source_not_ready`: a selected source of the job was deleted or is not ready (FR-16, FR-17).
           content:
             application/problem+json:
               schema:
@@ -1026,9 +1033,45 @@ paths:
           format: uuid
     put:
       tags: [admin]
-      summary: Move a teacher, with the students of the teacher, to another administrator
-      description: UC-02 A3 (FR-08).
+      summary: Move a teacher to another administrator
+      description: |
+        UC-02 A3 (FR-08). The students of the teacher stay with their current administrator.
+        To move a student too, use `PUT /api/v1/admin/students/{student_id}/administrator`.
+        The teacher stays the teacher of the same students (`student_teachers` does not change).
       operationId: setTeacherAdministrator
+      x-roles: [administrator]
+      x-access: assigned
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [administrator_id]
+              properties:
+                administrator_id:
+                  type: string
+                  format: uuid
+      responses:
+        "204":
+          description: The assignment is saved.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/admin/students/{student_id}/administrator:
+    parameters:
+      - $ref: "#/components/parameters/StudentId"
+    put:
+      tags: [admin]
+      summary: Move a student to another administrator
+      description: |
+        FR-08, UC-02 A3 step 3. The administrator moves one of the administrator's students.
+        The teachers of the student do not change.
+      operationId: setStudentAdministrator
       x-roles: [administrator]
       x-access: assigned
       requestBody:
@@ -1088,7 +1131,9 @@ paths:
       description: |
         The API deletes the account, its sources, its files and its generated material (FR-09, NFR-06).
         The user cannot log in after this.
-        The administrator can delete only users of the administrator's group.
+        The administrator can delete only students and teachers of the administrator's group.
+        The API returns `403` for an administrator account, also for the administrator's own account.
+        When a teacher is deleted, the students of the teacher have no teacher in that subject until an administrator assigns one (FR-08).
       operationId: deleteUser
       x-roles: [administrator]
       x-access: assigned
@@ -1493,6 +1538,10 @@ components:
     # ---------------- questions
     SourceSelection:
       type: object
+      description: |
+        All sources must belong to the logged-in student and to the course of the path.
+        For a source of another course or of another user, the API returns `404` (`source_not_found`).
+        It does not tell which source IDs exist.
       required: [source_ids]
       properties:
         source_ids:
@@ -1553,7 +1602,9 @@ components:
     JobStatus:
       type: string
       enum: [waiting, running, done, failed]
-      description: A job that runs longer than 2 minutes becomes `failed` (FR-01, NFR-18).
+      description: |
+        A `source_processing`, `summary` or `quiz` job that runs longer than 2 minutes becomes `failed` (FR-01, NFR-18).
+        The 2-minute limit does not apply to `portal_import`.
     Job:
       type: object
       required: [id, type, status, created_at, updated_at]
@@ -1671,6 +1722,10 @@ components:
               $ref: "#/components/schemas/QuizResult"
     QuizSubmission:
       type: object
+      description: |
+        The student can leave questions without an answer. A question without an answer counts as wrong,
+        and the result shows its correct option and citation (FR-23).
+        A question that is not in the quiz, or an option that is not an option of the question, gives `422`.
       required: [answers]
       properties:
         answers:

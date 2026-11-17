@@ -9,7 +9,7 @@ from app.main import app
 
 CONTRACT_PATH = Path(__file__).resolve().parents[2] / "contracts" / "openapi.yaml"
 HTTP_METHODS = {"get", "post", "put", "patch", "delete"}
-PUBLIC_OPERATIONS = {"getHealth", "activateAccount", "login", "refreshTokens"}
+PUBLIC_OPERATIONS = {"getHealth", "activateAccount", "login", "refreshTokens", "logout"}
 ROLES = {"student", "teacher", "administrator"}
 ACCESS_CHECKS = {"self", "own", "assigned", "none"}
 

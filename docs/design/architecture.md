@@ -125,13 +125,13 @@ The study planner design (WBS-6.1) gives the details.
 
 ## 3. Authentication and sessions
 
-Team decision (16.11.2026): access token and refresh token.
+Decision by Burak (16.11.2026), open for team review: access token and refresh token.
 
 - `POST /auth/activate` and `POST /auth/login` return a token pair.
 - The access token is a JWT with a lifetime of 15 minutes. It holds the user ID and the role.
 - The refresh token is a random value. The database keeps only its hash. The client sends it to `POST /auth/refresh` and gets a new pair. The old refresh token stops working (rotation).
-- `POST /auth/logout` revokes the refresh token (FR-04). The access token stops working at the end of its lifetime.
-- The web application keeps the tokens in memory and in the browser storage. The mobile applications keep the refresh token in the secure storage of the phone (FR-40).
+- `POST /auth/logout` revokes the refresh token (FR-04). It needs only the refresh token, so a client can log out also after the access token expired. The access token stops working at the end of its lifetime.
+- Where the web application keeps the tokens is an open point (see section 6). The mobile applications keep the refresh token in the secure storage of the phone (FR-40).
 - Activation and login use two endpoints. There is no endpoint that tells whether a portal ID exists or is active (FR-05).
 - Passwords are stored only as salted hashes (NFR-01).
 
@@ -141,14 +141,25 @@ The access and privacy design (WBS-2.1) gives the access matrix and the KVKK dat
 
 - **Contract first.** Change `contracts/openapi.yaml` before you change an endpoint (`AGENTS.md` section 2).
 - **Prefix.** All endpoints start with `/api/v1`, except `/health`.
-- **Authorization.** All endpoints need `Authorization: Bearer <access token>`, except `/health`, activate, login and refresh. The API checks the role and the assignments on every call (NFR-03). Hiding a page in the client is not an access control.
+- **Authorization.** All endpoints need `Authorization: Bearer <access token>`, except `/health`, activate, login, refresh and logout. The API checks the role and the assignments on every call (NFR-03). Hiding a page in the client is not an access control.
 - **Roles and access.** Each operation in the contract has `x-roles` (the roles that can call it) and `x-access` (the data check after the role check: `self`, `own`, `assigned` or `none`). The authorization tests (WBS-2.2) and the pages use these fields. The contract description defines the values.
 - **Errors.** All errors use `application/problem+json` (RFC 9457) with a stable `code` and a Turkish `detail` that the client can show.
 - **IDs.** All IDs are UUIDs, except the `portal_id` from the portal data.
 - **Times.** All times are in UTC (ISO 8601). The client shows them in Turkish time.
 - **Long tasks.** Source processing, summaries, quizzes and imports return `202` with a job. The client polls `GET /jobs/{id}` (FR-01).
-- **Answers.** `POST /courses/{id}/questions` returns a server-sent event stream (team decision, 16.11.2026), so that the answer starts to appear early (NFR-09). The browser `EventSource` API supports only `GET`, and the generated API client does not read streams. The frontend reads this stream with `fetch` and a stream reader.
+- **Answers.** `POST /courses/{id}/questions` returns a server-sent event stream (decision by Burak, 16.11.2026, open for team review), so that the answer starts to appear early (NFR-09). The browser `EventSource` API supports only `GET`, and the generated API client does not read streams. The frontend reads this stream with `fetch` and a stream reader.
 - **Pages.** Lists that grow without a limit (the question history) use `limit` and `cursor`.
+
+### 4.1 Assignments and dashboards
+
+The three assignment lists are independent (FR-07, FR-08):
+
+- A teacher sees the students that have this teacher in `student_teachers`, in the subject of the teacher.
+- An administrator sees the students that have this administrator in `student_administrators`, in all subjects.
+- An administrator manages the teachers that have this administrator in `teacher_administrators`.
+
+After UC-02 A3, a student can have a teacher in the group of another administrator. Each dashboard still follows its own list: the teacher sees the student, and the student's administrator sees the student.
+UC-02 E1 applies only when an administrator moves a student to a teacher: the teacher must be in the group of the administrator.
 
 ## 5. Requirement to endpoint map
 
@@ -160,7 +171,7 @@ The access and privacy design (WBS-2.1) gives the access matrix and the KVKK dat
 | FR-04 | `POST /auth/logout`, `POST /auth/refresh` |
 | FR-06 | `GET /me` (role); `403` on all endpoints |
 | FR-07 | `GET /dashboard/students`, `GET /dashboard/students/{id}` |
-| FR-08 | `PUT /admin/students/{id}/teacher`, `PUT /admin/teachers/{id}/administrator` |
+| FR-08 | `PUT /admin/students/{id}/teacher`, `PUT /admin/students/{id}/administrator`, `PUT /admin/teachers/{id}/administrator` |
 | FR-09 | `DELETE /admin/users/{id}` |
 | FR-10 | `GET /courses`, `GET /courses/{id}` |
 | FR-11 | `POST /auth/login` (reads grades), `GET /grades` |
@@ -191,7 +202,9 @@ The documents do not decide these points. The owner decides them in the given ac
 | Account takeover at activation. With only the portal ID, a person who knows the portal ID of another user can activate that account first. | Add a second check, for example a one-time activation code for each user in the portal data. This changes FR-02, so the team must decide. | Team decision; WBS-2.1 (Burak), Requirements Analysis |
 | Password rules (length and others) | Not set | WBS-2.1 (Burak) |
 | Refresh token lifetime | Not set | WBS-2.1 (Burak) |
-| Where the web application keeps the refresh token | Browser storage. Browser storage is open to XSS. Compare it with an `httpOnly` cookie. | WBS-2.1 (Burak) |
+| Where the web application keeps the tokens | Not set. Browser storage is open to XSS. Compare it with an `httpOnly` cookie. | WBS-2.1 (Burak) |
+| Reuse detection for refresh tokens: if a revoked refresh token is used again, revoke all tokens of the user (proposal by Metin) | Not set | WBS-2.1 (Burak) |
+| Rate limit on login and activate (proposal by Metin) | Not set | WBS-2.1 (Burak) |
 | CORS: allowed origins, including the Capacitor origins (for example `capacitor://localhost`) | Not set | WBS-2.1 (Burak), WBS-12.1 |
 | Delete a user at once or as a job | At once (`204`) | WBS-2.1 (Burak) |
 | Monthly token limit for each student | Not set | Design Specification (FR-37 note) |
@@ -207,7 +220,7 @@ The documents do not decide these points. The owner decides them in the given ac
 - the contract is a valid OpenAPI 3.1 document,
 - all operation IDs are unique,
 - all protected operations document `401`,
-- only `/health`, activate, login and refresh are public. A new public operation fails the test.
+- only `/health`, activate, login, refresh and logout are public. A new public operation fails the test.
 - all protected operations have `x-roles` and `x-access`, and document `403` when a role or data check can refuse the call,
 - all error responses use `application/problem+json`,
 - all paths use the `/api/v1` prefix,
