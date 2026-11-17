@@ -1,0 +1,1917 @@
+openapi: 3.1.0
+info:
+  title: Chiron API
+  version: 0.1.0
+  description: |
+    REST API of Chiron. The web application and the Android and iOS applications use this API (NFR-26).
+
+    Rules for all endpoints:
+    - All paths start with `/api/v1`, except `/health`.
+    - All endpoints need a bearer access token, except the endpoints with `security: []`.
+    - The API checks the role and the assignments of the user on every call (NFR-03).
+    - All errors use the `Problem` schema (`application/problem+json`).
+    - All IDs are UUIDs, except `portal_id`.
+    - All times are in UTC (ISO 8601).
+    - `x-roles` lists the roles that can call an operation. The API returns `403` to other roles (FR-06).
+    - `x-access` gives the data check after the role check (FR-07, NFR-03):
+      - `self`: only the data of the logged-in user.
+      - `own`: only resources that the logged-in user owns. A student never sees the sources, files,
+        answers, summaries, quizzes or jobs of another user.
+        For a course: the student is enrolled in the course.
+      - `assigned`: only students, teachers and data in the assignment group of the user.
+        A teacher sees only the assigned students, and only in the subject of the teacher.
+      - `none`: no data check after the role check.
+
+    Source: WBS-1.1. Requirement IDs are from the Requirements Specification.
+servers:
+  - url: /
+security:
+  - bearerAuth: []
+tags:
+  - name: system
+    description: Service checks
+  - name: auth
+    description: Account activation, login, token refresh and logout (FR-02 to FR-05, FR-40)
+  - name: me
+    description: Data of the logged-in user
+  - name: courses
+    description: Courses, units, topics and grades from the portal data (FR-10, FR-11)
+  - name: sources
+    description: Source upload and processing (FR-13 to FR-17)
+  - name: questions
+    description: Cited questions and answers (FR-18 to FR-20)
+  - name: jobs
+    description: Background jobs (FR-01, FR-25)
+  - name: summaries
+    description: Summary PDFs (FR-21, FR-25)
+  - name: quizzes
+    description: Quizzes (FR-22 to FR-25)
+  - name: study-plans
+    description: Weekly study plans (FR-27 to FR-31)
+  - name: dashboard
+    description: Teacher and administrator dashboards (FR-07, FR-32 to FR-34)
+  - name: admin
+    description: Assignments, imports and account deletion (FR-08, FR-09, FR-12)
+
+paths:
+  /health:
+    get:
+      tags: [system]
+      summary: Check that the API runs
+      operationId: getHealth
+      security: []
+      responses:
+        "200":
+          description: The API runs.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status:
+                    type: string
+                    const: ok
+
+  # ---------------------------------------------------------------- auth
+  /api/v1/auth/activate:
+    post:
+      tags: [auth]
+      summary: Activate an imported account and log in
+      description: |
+        The user sets a password on the first login (FR-02).
+        The API gives the same error for an unknown portal ID and for an account that is already active.
+        This does not tell which portal IDs exist (FR-05).
+
+        Open point: with only the portal ID, a person who knows the portal ID of another user
+        can activate that account first. The team decides on a second check (for example a
+        one-time activation code in the portal data) in WBS-2.1. See `docs/design/architecture.md` section 6.
+      operationId: activateAccount
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ActivateRequest"
+      responses:
+        "200":
+          description: The account is active. The user is logged in.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenPair"
+        "400":
+          $ref: "#/components/responses/ActivationFailed"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /api/v1/auth/login:
+    post:
+      tags: [auth]
+      summary: Log in with portal ID and password
+      description: |
+        A wrong portal ID and a wrong password give the same error (FR-05).
+        For a student, the API reads the latest grades from the portal (FR-11).
+        If the portal is not available, the login continues (UC-01 E3).
+      operationId: login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: The user is logged in.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenPair"
+        "401":
+          $ref: "#/components/responses/LoginFailed"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /api/v1/auth/refresh:
+    post:
+      tags: [auth]
+      summary: Get a new token pair with a refresh token
+      description: |
+        The API replaces the refresh token with a new one (rotation).
+        The mobile applications use this to keep the user logged in (FR-40).
+      operationId: refreshTokens
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshRequest"
+      responses:
+        "200":
+          description: A new token pair.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenPair"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/auth/logout:
+    post:
+      tags: [auth]
+      summary: Log out
+      description: |
+        The API revokes the refresh token. After this, the session cannot get new access tokens (FR-04).
+        The call needs only the refresh token, so a client can log out also after the access token expired.
+        The API returns `204` also for an unknown or revoked refresh token. It does not tell which tokens exist.
+      operationId: logout
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshRequest"
+      responses:
+        "204":
+          description: The user is logged out.
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  # ---------------------------------------------------------------- me
+  /api/v1/me:
+    get:
+      tags: [me]
+      summary: Get the logged-in user
+      description: The client uses the role to show only the pages of the role (FR-06).
+      operationId: getMe
+      x-roles: [student, teacher, administrator]
+      x-access: self
+      responses:
+        "200":
+          description: The logged-in user.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/me/token-usage:
+    get:
+      tags: [me]
+      summary: Get the AI token usage and the monthly limit of the student
+      description: The student sees when the limit resets (FR-37).
+      operationId: getMyTokenUsage
+      x-roles: [student]
+      x-access: self
+      responses:
+        "200":
+          description: Token usage of this month.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenBudget"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  # ---------------------------------------------------------------- courses
+  /api/v1/courses:
+    get:
+      tags: [courses]
+      summary: List the courses of the student
+      description: Courses, units and topics come from the portal data (FR-10).
+      operationId: listCourses
+      x-roles: [student]
+      x-access: self
+      responses:
+        "200":
+          description: The courses of the student. The list is empty if the portal has no classes for the student (UC-03 A1).
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CourseSummary"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/v1/courses/{course_id}:
+    parameters:
+      - $ref: "#/components/parameters/CourseId"
+    get:
+      tags: [courses]
+      summary: Get a course with its units and topics
+      operationId: getCourse
+      x-roles: [student]
+      x-access: own
+      responses:
+        "200":
+          description: The course.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Course"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/grades:
+    get:
+      tags: [courses]
+      summary: Get the per-topic grades of the student
+      description: |
+        The grades are the ones read from the portal at the last login or weekly planning run (FR-11).
+        `updated_at` shows when the API read them (UC-01 E3).
+      operationId: getMyGrades
+      x-roles: [student]
+      x-access: self
+      responses:
+        "200":
+          description: Per-topic grades.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GradeList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  # ---------------------------------------------------------------- sources
+  /api/v1/courses/{course_id}/sources:
+    parameters:
+      - $ref: "#/components/parameters/CourseId"
+    get:
+      tags: [sources]
+      summary: List the sources of the student in a course
+      operationId: listSources
+      x-roles: [student]
+      x-access: own
+      responses:
+        "200":
+          description: The sources.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Source"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    post:
+      tags: [sources]
+      summary: Upload a source
+      description: |
+        Accepted formats: PDF (FR-13). DOCX and PPTX only if FR-14 is built.
+        Limits: 20 MB for each file and 20 sources for each course (FR-13).
+        The API stores the file and starts a processing job (FR-16).
+        A file without readable text fails during processing, not here (UC-04 E2).
+      operationId: uploadSource
+      x-roles: [student]
+      x-access: own
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  contentMediaType: application/octet-stream
+      responses:
+        "202":
+          description: The API accepted the file. The source has the status `processing`.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Source"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: The course has 20 sources (`source_limit_reached`, FR-15).
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "413":
+          description: The file is larger than 20 MB (`file_too_large`, FR-15).
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "415":
+          description: The file format is not accepted (`unsupported_format`, FR-15). The message lists the accepted formats.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+
+  /api/v1/sources/{source_id}:
+    parameters:
+      - $ref: "#/components/parameters/SourceId"
+    get:
+      tags: [sources]
+      summary: Get a source and its processing status
+      operationId: getSource
+      x-roles: [student]
+      x-access: own
+      responses:
+        "200":
+          description: The source.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Source"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [sources]
+      summary: Delete a source
+      description: The API deletes the file and its passages. Answers, summaries and quizzes do not use it after this (FR-17).
+      operationId: deleteSource
+      x-roles: [student]
+      x-access: own
+      responses:
+        "204":
+          description: The source is deleted.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/sources/{source_id}/file:
+    parameters:
+      - $ref: "#/components/parameters/SourceId"
+    get:
+      tags: [sources]
+      summary: Download the original file of a source
+      description: The client opens the file at the page or slide of a citation.
+      operationId: downloadSourceFile
+      x-roles: [student]
+      x-access: own
+      responses:
+        "200":
+          description: The original file.
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                contentMediaType: application/octet-stream
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/passages/{passage_id}:
+    parameters:
+      - name: passage_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags: [sources]
+      summary: Get the passage of a citation
+      description: The student clicks a citation and reads the passage (FR-18, FR-23).
+      operationId: getPassage
+      x-roles: [student]
+      x-access: own
+      responses:
+        "200":
+          description: The passage.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Passage"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ---------------------------------------------------------------- questions
+  /api/v1/courses/{course_id}/questions:
+    parameters:
+      - $ref: "#/components/parameters/CourseId"
+    get:
+      tags: [questions]
+      summary: List earlier questions and answers in a course
+      description: Newest first (FR-20).
+      operationId: listQuestions
+      x-roles: [student]
+      x-access: own
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Cursor"
+      responses:
+        "200":
+          description: A page of the question history.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuestionPage"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    post:
+      tags: [questions]
+      summary: Ask a question about the selected sources
+      description: |
+        The API answers in Turkish only from the selected sources, with citations (FR-18, NFR-11).
+        The answer is a server-sent event stream, so that it starts to appear early (NFR-09).
+
+        Events, in this order:
+        - `answer.delta` (zero or more): `{"text": "..."}`, the next part of the answer.
+        - `answer.citations` (one): `{"citations": [Citation]}`.
+        - `answer.done` (one): the full `QuestionAnswer`. The API saves it in the history (FR-20).
+        - `error` (instead of the events above, at any point): a `Problem`.
+
+        If no passage fits the question, the stream has one `answer.done` event
+        with `has_answer: false` and no AI request is sent (FR-19).
+
+        The API checks the token limit before the stream starts (FR-37).
+      operationId: askQuestion
+      x-roles: [student]
+      x-access: own
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuestionRequest"
+      responses:
+        "200":
+          description: The answer stream.
+          content:
+            text/event-stream:
+              schema:
+                type: string
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/SourceNotReady"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+        "429":
+          $ref: "#/components/responses/TokenLimitReached"
+
+  # ---------------------------------------------------------------- jobs
+  /api/v1/jobs/{job_id}:
+    parameters:
+      - $ref: "#/components/parameters/JobId"
+    get:
+      tags: [jobs]
+      summary: Get the status of a background job
+      description: The client polls this endpoint to show the status (FR-01).
+      operationId: getJob
+      x-roles: [student, administrator]
+      x-access: own
+      responses:
+        "200":
+          description: The job.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/jobs/{job_id}/retry:
+    parameters:
+      - $ref: "#/components/parameters/JobId"
+    post:
+      tags: [jobs]
+      summary: Run a failed summary or quiz job again
+      description: |
+        The student tries again after a failure (FR-25).
+        Only `summary` and `quiz` jobs can run again. To try a failed source again, the student deletes it and uploads it again (UC-04 E2).
+      operationId: retryJob
+      x-roles: [student]
+      x-access: own
+      responses:
+        "202":
+          description: The job runs again with the status `waiting`.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: |
+            The job cannot run again:
+            - `job_not_failed`: the job did not fail.
+            - `job_not_retryable`: the job is not a `summary` or `quiz` job.
+            - `source_not_ready`: a selected source of the job was deleted or is not ready (FR-16, FR-17).
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "429":
+          $ref: "#/components/responses/TokenLimitReached"
+
+  # ---------------------------------------------------------------- summaries
+  /api/v1/courses/{course_id}/summaries:
+    parameters:
+      - $ref: "#/components/parameters/CourseId"
+    get:
+      tags: [summaries]
+      summary: List the summaries of the student in a course
+      operationId: listSummaries
+      x-roles: [student]
+      x-access: own
+      responses:
+        "200":
+          description: The summaries.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Summary"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    post:
+      tags: [summaries]
+      summary: Start a summary of the selected sources
+      description: The API starts a background job (FR-01, FR-21).
+      operationId: createSummary
+      x-roles: [student]
+      x-access: own
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SourceSelection"
+      responses:
+        "202":
+          description: The job started.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Summary"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/SourceNotReady"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+        "429":
+          $ref: "#/components/responses/TokenLimitReached"
+
+  /api/v1/summaries/{summary_id}:
+    parameters:
+      - $ref: "#/components/parameters/SummaryId"
+    get:
+      tags: [summaries]
+      summary: Get a summary
+      operationId: getSummary
+      x-roles: [student]
+      x-access: own
+      responses:
+        "200":
+          description: The summary.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Summary"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/summaries/{summary_id}/pdf:
+    parameters:
+      - $ref: "#/components/parameters/SummaryId"
+    get:
+      tags: [summaries]
+      summary: Download the summary PDF
+      operationId: downloadSummaryPdf
+      x-roles: [student]
+      x-access: own
+      responses:
+        "200":
+          description: The PDF.
+          content:
+            application/pdf:
+              schema:
+                type: string
+                contentMediaType: application/pdf
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: The summary is not ready (`summary_not_ready`).
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+
+  # ---------------------------------------------------------------- quizzes
+  /api/v1/courses/{course_id}/quizzes:
+    parameters:
+      - $ref: "#/components/parameters/CourseId"
+    get:
+      tags: [quizzes]
+      summary: List the quizzes of the student in a course
+      operationId: listQuizzes
+      x-roles: [student]
+      x-access: own
+      responses:
+        "200":
+          description: The quizzes.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/QuizSummary"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    post:
+      tags: [quizzes]
+      summary: Start a quiz from the selected sources
+      description: The API starts a background job that generates 5 to 10 multiple-choice questions (FR-01, FR-22).
+      operationId: createQuiz
+      x-roles: [student]
+      x-access: own
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SourceSelection"
+      responses:
+        "202":
+          description: The job started.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuizSummary"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/SourceNotReady"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+        "429":
+          $ref: "#/components/responses/TokenLimitReached"
+
+  /api/v1/quizzes/{quiz_id}:
+    parameters:
+      - $ref: "#/components/parameters/QuizId"
+    get:
+      tags: [quizzes]
+      summary: Get a quiz
+      description: |
+        Before the submission, the API does not send the correct options.
+        After the submission, the API also sends the result (FR-24).
+      operationId: getQuiz
+      x-roles: [student]
+      x-access: own
+      responses:
+        "200":
+          description: The quiz.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Quiz"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/quizzes/{quiz_id}/submission:
+    parameters:
+      - $ref: "#/components/parameters/QuizId"
+    post:
+      tags: [quizzes]
+      summary: Submit the answers of a quiz
+      description: |
+        The API saves the answers and the score per topic (FR-24).
+        It returns the score, the correct options and a citation for each question (FR-23).
+        A student can submit a quiz only one time.
+      operationId: submitQuiz
+      x-roles: [student]
+      x-access: own
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuizSubmission"
+      responses:
+        "200":
+          description: The result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuizResult"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: The quiz is not ready (`quiz_not_ready`) or is already submitted (`quiz_already_submitted`).
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  # ---------------------------------------------------------------- study plans
+  /api/v1/study-plans/current:
+    get:
+      tags: [study-plans]
+      summary: Get the study plan of this week
+      description: The weekly planning run creates the plan on Monday morning (FR-30).
+      operationId: getCurrentStudyPlan
+      x-roles: [student]
+      x-access: self
+      responses:
+        "200":
+          description: The plan of this week.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudyPlan"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: The weekly planning run has not created a plan for this student yet (`plan_not_created`).
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+
+  # ---------------------------------------------------------------- dashboard
+  /api/v1/dashboard/students:
+    get:
+      tags: [dashboard]
+      summary: List the assigned students with per-topic success rates
+      description: |
+        A teacher gets only the assigned students, and only in the subject of the teacher (FR-07, FR-32).
+        An administrator gets the assigned students in all subjects (FR-07, FR-33).
+      operationId: listDashboardStudents
+      x-roles: [teacher, administrator]
+      x-access: assigned
+      parameters:
+        - name: subject_id
+          in: query
+          description: Only for administrators. Filter by subject (UC-10).
+          schema:
+            type: string
+            format: uuid
+        - name: class_id
+          in: query
+          description: Filter by class (UC-10).
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: The students. The list is empty if the user has no assigned students (UC-09 A1).
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StudentPerformance"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/v1/dashboard/students/{student_id}:
+    parameters:
+      - $ref: "#/components/parameters/StudentId"
+    get:
+      tags: [dashboard]
+      summary: Get one assigned student with per-topic success rates
+      description: The API refuses access to a student who is not assigned to the user (UC-09 E1).
+      operationId: getDashboardStudent
+      x-roles: [teacher, administrator]
+      x-access: assigned
+      responses:
+        "200":
+          description: The student.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudentPerformance"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/dashboard/token-usage:
+    get:
+      tags: [dashboard]
+      summary: Get the AI token usage of the assigned students for a period
+      description: The period includes both dates (FR-34). A period with no usage gives zero totals (UC-10 A1).
+      operationId: getDashboardTokenUsage
+      x-roles: [teacher, administrator]
+      x-access: assigned
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: class_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Token totals for each assigned student.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StudentTokenUsage"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  # ---------------------------------------------------------------- admin
+  /api/v1/admin/assignments:
+    get:
+      tags: [admin]
+      summary: Get the teachers and students assigned to the administrator
+      operationId: getAssignments
+      x-roles: [administrator]
+      x-access: assigned
+      responses:
+        "200":
+          description: The assignments.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AssignmentTree"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/v1/admin/students/{student_id}/teacher:
+    parameters:
+      - $ref: "#/components/parameters/StudentId"
+    put:
+      tags: [admin]
+      summary: Move a student to another teacher
+      description: |
+        A teacher teaches one subject. The new teacher replaces the current teacher of the student in that subject (FR-08).
+        The new teacher must be assigned to the same administrator (UC-02 E1).
+        Later imports do not change this assignment (FR-12).
+      operationId: setStudentTeacher
+      x-roles: [administrator]
+      x-access: assigned
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [teacher_id]
+              properties:
+                teacher_id:
+                  type: string
+                  format: uuid
+      responses:
+        "204":
+          description: The assignment is saved.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: The teacher is not assigned to this administrator (`teacher_not_in_group`).
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+
+  /api/v1/admin/teachers/{teacher_id}/administrator:
+    parameters:
+      - name: teacher_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    put:
+      tags: [admin]
+      summary: Move a teacher to another administrator
+      description: |
+        UC-02 A3 (FR-08). The students of the teacher stay with their current administrator.
+        To move a student too, use `PUT /api/v1/admin/students/{student_id}/administrator`.
+        The teacher stays the teacher of the same students (`student_teachers` does not change).
+      operationId: setTeacherAdministrator
+      x-roles: [administrator]
+      x-access: assigned
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [administrator_id]
+              properties:
+                administrator_id:
+                  type: string
+                  format: uuid
+      responses:
+        "204":
+          description: The assignment is saved.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/admin/students/{student_id}/administrator:
+    parameters:
+      - $ref: "#/components/parameters/StudentId"
+    put:
+      tags: [admin]
+      summary: Move a student to another administrator
+      description: |
+        FR-08, UC-02 A3 step 3. The administrator moves one of the administrator's students.
+        The teachers of the student do not change.
+      operationId: setStudentAdministrator
+      x-roles: [administrator]
+      x-access: assigned
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [administrator_id]
+              properties:
+                administrator_id:
+                  type: string
+                  format: uuid
+      responses:
+        "204":
+          description: The assignment is saved.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/admin/imports:
+    post:
+      tags: [admin]
+      summary: Import new accounts from the portal
+      description: |
+        The API adds new accounts with their assignments. It does not change existing assignments (FR-12).
+        The import runs as a background job.
+      operationId: startImport
+      x-roles: [administrator]
+      x-access: none
+      responses:
+        "202":
+          description: The import job started.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/v1/admin/users/{user_id}:
+    parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    delete:
+      tags: [admin]
+      summary: Delete a user account
+      description: |
+        The API deletes the account, its sources, its files and its generated material (FR-09, NFR-06).
+        The user cannot log in after this.
+        The administrator can delete only students and teachers of the administrator's group.
+        The API returns `403` for an administrator account, also for the administrator's own account.
+        When a teacher is deleted, the students of the teacher have no teacher in that subject until an administrator assigns one (FR-08).
+      operationId: deleteUser
+      x-roles: [administrator]
+      x-access: assigned
+      responses:
+        "204":
+          description: The account is deleted.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Access token from `/api/v1/auth/login`, `/api/v1/auth/activate` or `/api/v1/auth/refresh`.
+
+  parameters:
+    CourseId:
+      name: course_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    SourceId:
+      name: source_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    JobId:
+      name: job_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    SummaryId:
+      name: summary_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    QuizId:
+      name: quiz_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    StudentId:
+      name: student_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+    Cursor:
+      name: cursor
+      in: query
+      description: The `next_cursor` value of the previous page.
+      schema:
+        type: string
+
+  responses:
+    Unauthorized:
+      description: The access token is missing, is not valid or has expired (`unauthorized`).
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    Forbidden:
+      description: The role or the assignments of the user do not allow this (`forbidden`, FR-06, FR-07).
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    NotFound:
+      description: The resource does not exist (`not_found`).
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    ValidationError:
+      description: The request body or a parameter is not valid (`validation_error`).
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    LoginFailed:
+      description: The portal ID or the password is wrong (`login_failed`). The message is the same for both (FR-05).
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    ActivationFailed:
+      description: The portal ID is unknown or the account is already active (`activation_failed`). The message is the same for both.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    SourceNotReady:
+      description: A selected source is not ready (`source_not_ready`, FR-16).
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    TokenLimitReached:
+      description: The student reached the monthly token limit (`token_limit_reached`, FR-37). `resets_at` shows when the limit resets.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+
+  schemas:
+    Problem:
+      type: object
+      description: Error body (RFC 9457). `detail` is a Turkish message that the client can show to the user.
+      required: [type, title, status, code]
+      properties:
+        type:
+          type: string
+          description: A URI that identifies the error type.
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        code:
+          type: string
+          description: A stable error code for the client, for example `token_limit_reached`.
+        resets_at:
+          type: string
+          format: date-time
+          description: Only for `token_limit_reached`.
+        errors:
+          type: array
+          description: Only for `validation_error`.
+          items:
+            type: object
+            required: [field, message]
+            properties:
+              field:
+                type: string
+              message:
+                type: string
+
+    # ---------------- auth
+    ActivateRequest:
+      type: object
+      required: [portal_id, password]
+      properties:
+        portal_id:
+          type: string
+        password:
+          type: string
+          format: password
+    LoginRequest:
+      type: object
+      required: [portal_id, password]
+      properties:
+        portal_id:
+          type: string
+        password:
+          type: string
+          format: password
+    RefreshRequest:
+      type: object
+      required: [refresh_token]
+      properties:
+        refresh_token:
+          type: string
+    TokenPair:
+      type: object
+      required: [access_token, refresh_token, token_type, expires_in]
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        token_type:
+          type: string
+          const: bearer
+        expires_in:
+          type: integer
+          description: Lifetime of the access token in seconds.
+
+    # ---------------- users
+    Role:
+      type: string
+      enum: [student, teacher, administrator]
+    User:
+      type: object
+      required: [id, portal_id, full_name, role]
+      properties:
+        id:
+          type: string
+          format: uuid
+        portal_id:
+          type: string
+        full_name:
+          type: string
+        role:
+          $ref: "#/components/schemas/Role"
+        subject:
+          description: Only for teachers. The subject that the teacher teaches.
+          $ref: "#/components/schemas/Subject"
+    TokenBudget:
+      type: object
+      required: [used_tokens, limit_tokens, resets_at]
+      properties:
+        used_tokens:
+          type: integer
+        limit_tokens:
+          type: integer
+        resets_at:
+          type: string
+          format: date-time
+
+    # ---------------- courses
+    Subject:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+    CourseSummary:
+      type: object
+      required: [id, name, subject, class_name]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          examples: ["Kimya 10"]
+        subject:
+          $ref: "#/components/schemas/Subject"
+        class_name:
+          type: string
+          examples: ["10-A"]
+    Course:
+      allOf:
+        - $ref: "#/components/schemas/CourseSummary"
+        - type: object
+          required: [units]
+          properties:
+            units:
+              type: array
+              items:
+                $ref: "#/components/schemas/Unit"
+    Unit:
+      type: object
+      required: [id, name, topics]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        topics:
+          type: array
+          items:
+            $ref: "#/components/schemas/Topic"
+    Topic:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+    GradeList:
+      type: object
+      required: [updated_at, grades]
+      properties:
+        updated_at:
+          type: [string, "null"]
+          format: date-time
+          description: When the API read the grades from the portal. `null` if it never read them.
+        grades:
+          type: array
+          items:
+            $ref: "#/components/schemas/TopicGrade"
+    TopicGrade:
+      type: object
+      required: [topic, course_id, success_rate]
+      properties:
+        topic:
+          $ref: "#/components/schemas/Topic"
+        course_id:
+          type: string
+          format: uuid
+        success_rate:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: Success rate in percent (FR-27).
+
+    # ---------------- sources
+    SourceFormat:
+      type: string
+      enum: [pdf, docx, pptx]
+    Source:
+      type: object
+      required: [id, course_id, file_name, format, size_bytes, status, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        course_id:
+          type: string
+          format: uuid
+        file_name:
+          type: string
+        format:
+          $ref: "#/components/schemas/SourceFormat"
+        size_bytes:
+          type: integer
+          maximum: 20971520
+        status:
+          type: string
+          enum: [processing, ready, failed]
+        failure_code:
+          type: [string, "null"]
+          description: Only when `status` is `failed`, for example `no_readable_text` (UC-04 E2).
+        failure_message:
+          type: [string, "null"]
+        job_id:
+          type: string
+          format: uuid
+          description: The processing job.
+        created_at:
+          type: string
+          format: date-time
+    Location:
+      type: object
+      description: Where the passage is in the file (FR-18). One of the fields is set, as given by the format of the source.
+      properties:
+        page:
+          type: integer
+          description: Page number of a PDF (from 1).
+        slide:
+          type: integer
+          description: Slide number of a PPTX (from 1).
+        heading:
+          type: string
+          description: Nearest heading of a DOCX.
+    Passage:
+      type: object
+      required: [id, source_id, text, location]
+      properties:
+        id:
+          type: string
+          format: uuid
+        source_id:
+          type: string
+          format: uuid
+        text:
+          type: string
+          description: The passage in its original language (NFR-11).
+        location:
+          $ref: "#/components/schemas/Location"
+    Citation:
+      type: object
+      required: [marker, passage_id, source_id, source_file_name, location]
+      properties:
+        marker:
+          type: integer
+          description: The number that the answer text uses for this citation, for example `[1]`.
+        passage_id:
+          type: string
+          format: uuid
+        source_id:
+          type: string
+          format: uuid
+        source_file_name:
+          type: string
+        location:
+          $ref: "#/components/schemas/Location"
+
+    # ---------------- questions
+    SourceSelection:
+      type: object
+      description: |
+        All sources must belong to the logged-in student and to the course of the path.
+        For a source of another course or of another user, the API returns `404` (`source_not_found`).
+        It does not tell which source IDs exist.
+      required: [source_ids]
+      properties:
+        source_ids:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items:
+            type: string
+            format: uuid
+    QuestionRequest:
+      allOf:
+        - $ref: "#/components/schemas/SourceSelection"
+        - type: object
+          required: [question]
+          properties:
+            question:
+              type: string
+              minLength: 1
+    QuestionAnswer:
+      type: object
+      required: [id, question, has_answer, answer, citations, source_ids, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        question:
+          type: string
+        has_answer:
+          type: boolean
+          description: "`false` if the selected sources do not contain an answer (FR-19)."
+        answer:
+          type: string
+          description: The answer in Turkish with citation markers. Empty if `has_answer` is `false`.
+        citations:
+          type: array
+          items:
+            $ref: "#/components/schemas/Citation"
+        source_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+        created_at:
+          type: string
+          format: date-time
+    QuestionPage:
+      type: object
+      required: [items, next_cursor]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuestionAnswer"
+        next_cursor:
+          type: [string, "null"]
+
+    # ---------------- jobs
+    JobStatus:
+      type: string
+      enum: [waiting, running, done, failed]
+      description: |
+        A `source_processing`, `summary` or `quiz` job that runs longer than 2 minutes becomes `failed` (FR-01, NFR-18).
+        The 2-minute limit does not apply to `portal_import`.
+    Job:
+      type: object
+      required: [id, type, status, created_at, updated_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [source_processing, summary, quiz, portal_import]
+        status:
+          $ref: "#/components/schemas/JobStatus"
+        error_code:
+          type: [string, "null"]
+          description: Only when `status` is `failed`, for example `pdf_compile_failed`, `invalid_ai_output`, `timeout`.
+        error_message:
+          type: [string, "null"]
+          description: A Turkish message that the client can show (FR-25).
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    # ---------------- summaries
+    Summary:
+      type: object
+      required: [id, course_id, source_ids, job, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        course_id:
+          type: string
+          format: uuid
+        source_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+        job:
+          $ref: "#/components/schemas/Job"
+        created_at:
+          type: string
+          format: date-time
+
+    # ---------------- quizzes
+    QuizSummary:
+      type: object
+      required: [id, course_id, source_ids, job, submitted, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        course_id:
+          type: string
+          format: uuid
+        source_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+        job:
+          $ref: "#/components/schemas/Job"
+        submitted:
+          type: boolean
+        score:
+          type: [number, "null"]
+          minimum: 0
+          maximum: 100
+          description: Score in percent. `null` before the submission.
+        created_at:
+          type: string
+          format: date-time
+    QuizOption:
+      type: object
+      required: [id, text]
+      properties:
+        id:
+          type: string
+          format: uuid
+        text:
+          type: string
+    QuizQuestion:
+      type: object
+      required: [id, text, topic, options]
+      properties:
+        id:
+          type: string
+          format: uuid
+        text:
+          type: string
+        topic:
+          $ref: "#/components/schemas/Topic"
+        options:
+          type: array
+          minItems: 2
+          items:
+            $ref: "#/components/schemas/QuizOption"
+    Quiz:
+      allOf:
+        - $ref: "#/components/schemas/QuizSummary"
+        - type: object
+          required: [questions]
+          properties:
+            questions:
+              type: array
+              description: Empty until the job is `done`. 5 to 10 questions when it is `done` (FR-22).
+              maxItems: 10
+              items:
+                $ref: "#/components/schemas/QuizQuestion"
+            result:
+              description: Only after the submission (FR-24).
+              $ref: "#/components/schemas/QuizResult"
+    QuizSubmission:
+      type: object
+      description: |
+        The student can leave questions without an answer. A question without an answer counts as wrong,
+        and the result shows its correct option and citation (FR-23).
+        A question that is not in the quiz, or an option that is not an option of the question, gives `422`.
+      required: [answers]
+      properties:
+        answers:
+          type: array
+          items:
+            type: object
+            required: [question_id, option_id]
+            properties:
+              question_id:
+                type: string
+                format: uuid
+              option_id:
+                type: string
+                format: uuid
+    QuizResult:
+      type: object
+      required: [score, questions, topic_scores]
+      properties:
+        score:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: Score in percent.
+        questions:
+          type: array
+          items:
+            type: object
+            required: [question_id, selected_option_id, correct_option_id, is_correct, citation]
+            properties:
+              question_id:
+                type: string
+                format: uuid
+              selected_option_id:
+                type: [string, "null"]
+                format: uuid
+              correct_option_id:
+                type: string
+                format: uuid
+              is_correct:
+                type: boolean
+              citation:
+                $ref: "#/components/schemas/Citation"
+        topic_scores:
+          type: array
+          description: Score per topic (FR-24).
+          items:
+            type: object
+            required: [topic, correct, total]
+            properties:
+              topic:
+                $ref: "#/components/schemas/Topic"
+              correct:
+                type: integer
+              total:
+                type: integer
+
+    # ---------------- study plans
+    StudyPlan:
+      type: object
+      required: [week_start, status, items, created_at]
+      properties:
+        week_start:
+          type: string
+          format: date
+          description: The Monday of the week (FR-30).
+        status:
+          type: string
+          enum: [ready, no_weak_topics, no_grades]
+          description: |
+            `no_weak_topics`: UC-08 A1. `no_grades`: UC-08 E1. `items` is empty for both.
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/StudyPlanItem"
+        created_at:
+          type: string
+          format: date-time
+    StudyPlanItem:
+      type: object
+      required: [topic, course_id, reason, success_rate, class_average, hours, steps]
+      properties:
+        topic:
+          $ref: "#/components/schemas/Topic"
+        course_id:
+          type: string
+          format: uuid
+        reason:
+          type: string
+          enum: [below_threshold, below_class_average]
+          description: Which rule of FR-28 put the topic in the plan.
+        success_rate:
+          type: number
+          minimum: 0
+          maximum: 100
+        class_average:
+          type: [number, "null"]
+          minimum: 0
+          maximum: 100
+          description: Only when the class rule applies (FR-31). Otherwise `null`.
+        hours:
+          type: integer
+          minimum: 1
+          maximum: 4
+          description: Study hours for the week (FR-29).
+        steps:
+          type: array
+          items:
+            $ref: "#/components/schemas/StudyStep"
+    StudyStep:
+      type: object
+      required: [kind, text]
+      properties:
+        kind:
+          type: string
+          enum: [review_topic, practice_questions]
+        text:
+          type: string
+          description: The step in Turkish. The AI writes it (UC-12).
+
+    # ---------------- dashboard
+    StudentRef:
+      type: object
+      required: [id, full_name, class_name]
+      properties:
+        id:
+          type: string
+          format: uuid
+        full_name:
+          type: string
+        class_name:
+          type: string
+    StudentPerformance:
+      type: object
+      required: [student, topics]
+      properties:
+        student:
+          $ref: "#/components/schemas/StudentRef"
+        topics:
+          type: array
+          items:
+            type: object
+            required: [topic, subject, success_rate]
+            properties:
+              topic:
+                $ref: "#/components/schemas/Topic"
+              subject:
+                $ref: "#/components/schemas/Subject"
+              success_rate:
+                type: number
+                minimum: 0
+                maximum: 100
+    StudentTokenUsage:
+      type: object
+      required: [student, total_tokens, request_count]
+      properties:
+        student:
+          $ref: "#/components/schemas/StudentRef"
+        total_tokens:
+          type: integer
+        request_count:
+          type: integer
+
+    # ---------------- admin
+    AssignmentTree:
+      type: object
+      required: [teachers, unassigned_students]
+      properties:
+        teachers:
+          type: array
+          items:
+            type: object
+            required: [id, full_name, subject, students]
+            properties:
+              id:
+                type: string
+                format: uuid
+              full_name:
+                type: string
+              subject:
+                $ref: "#/components/schemas/Subject"
+              students:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StudentRef"
+        unassigned_students:
+          type: array
+          description: Students of the administrator who have no teacher in a subject.
+          items:
+            $ref: "#/components/schemas/StudentRef"
