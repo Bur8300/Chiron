@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Chiron · Ekran taslakları</title>
+  <style>
+    * { box-sizing: border-box; } body { margin: 0; font: 16px/1.6 system-ui, sans-serif; color: #263248; background: #f1f3f6; }
+    header, main { max-width: 1500px; margin: auto; padding: 24px; } h1 { font-size: 24px; margin: 0; } p { margin: 8px 0 16px; }
+    nav { display: flex; flex-wrap: wrap; gap: 8px; } a, button { min-height: 44px; padding: 10px 14px; border: 1px solid #a9b3c3; border-radius: 6px; background: white; color: #263248; font: inherit; text-decoration: none; cursor: pointer; }
+    a[aria-current], button[aria-pressed="true"] { color: white; background: #33425c; } :focus-visible { outline: 3px solid #3449a4; outline-offset: 3px; }
+    .size { display: flex; gap: 8px; margin-top: 20px; } img { display: block; width: 100%; height: auto; border: 1px solid #a9b3c3; background: white; } img.phone { max-width: 360px; margin: auto; }
+    #screen-title { font-size: 18px; } footer { padding: 24px; text-align: center; color: #46536a; }
+  </style>
+</head>
+<body>
+<header><h1>Chiron · Ekran taslakları</h1><p>Önerilen ekranlar ve gezinme. Gerçek hesap, veri veya çalışan ders araçları içermez.</p>
+<nav aria-label="Ekranlar">
+  <a href="#login">Giriş</a><a href="#activation">Hesap etkinleştirme</a><a href="#courses">Dersler</a><a href="#sources">Kaynaklar</a><a href="#questions">Soru-cevap</a><a href="#summaries">Özet</a><a href="#quiz">Kısa sınav</a><a href="#planner">Çalışma planı</a>
+</nav>
+<div class="size" role="group" aria-label="Ekran boyutu"><button id="desktop" aria-pressed="true">Masaüstü</button><button id="phone" aria-pressed="false">Telefon · 360 px</button></div>
+</header>
+<main><h2 id="screen-title" tabindex="-1">Giriş</h2><img id="wireframe" src="login-desktop.svg" alt="Giriş ekranının masaüstü taslağı"></main>
+<footer>WBS-11.3 · Abdullah Faruk Özbek · İnceleme için taslak · 13 Kasım 2026</footer>
+<script>
+  const links = [...document.querySelectorAll('nav a')];
+  let mode = 'desktop';
+  function render(focus = false) {
+    const selected = links.find(link => link.hash === location.hash) || links[0];
+    links.forEach(link => { if (link === selected) link.setAttribute('aria-current', 'page'); else link.removeAttribute('aria-current'); });
+    const key = selected.hash.slice(1);
+    const title = document.getElementById('screen-title');
+    title.textContent = selected.textContent;
+    const img = document.getElementById('wireframe');
+    img.src = key + '-' + mode + '.svg';
+    img.alt = selected.textContent + (mode === 'phone' ? ' — telefon taslağı' : ' — masaüstü taslağı');
+    img.className = mode;
+    document.title = selected.textContent + ' · Chiron taslak';
+    if (focus) title.focus();
+  }
+  for (const size of ['desktop', 'phone']) document.getElementById(size).addEventListener('click', () => {
+    mode = size;
+    for (const other of ['desktop', 'phone']) document.getElementById(other).setAttribute('aria-pressed', String(other === size));
+    render();
+  });
+  window.addEventListener('hashchange', () => render(true));
+  render();
+</script>
+</body>
+</html>
