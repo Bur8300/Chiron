@@ -1,0 +1,8 @@
+{
+  "dataset": {"generator": "generate_mock_data.py", "seed": 411, "as_of": "2026-11-12", "note": "Fake data for development and tests. No real people. Do not add real data."},
+  "school": {"school_id": "OKUL-01", "name": "Chiron Deneme Anadolu Lisesi", "school_year": "2026-2027", "term": 1},
+  "classes": [
+    {"class_id": "10-A", "name": "10-A", "grade_level": 10, "section": "A"},
+    {"class_id": "10-B", "name": "10-B", "grade_level": 10, "section": "B"}
+  ]
+}
