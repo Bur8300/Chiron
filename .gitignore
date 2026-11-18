@@ -1,0 +1,17 @@
+.DS_Store
+
+# Python
+__pycache__/
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# Node
+node_modules/
+dist/
+
+# Local settings and secrets
+.env
+.claude/settings.local.json
+tests/frontend/browser-results/
+frontend/playwright-report/
