@@ -10,7 +10,7 @@
 This note describes the PostgreSQL schema of Chiron.
 The models are in `backend/app/db/models.py`. The first migration is `backend/alembic/versions/0001_initial_schema.py`.
 
-Sources: Requirements Specification v1.0, Project Plan v1.1 (WBS-1.2), the architecture note and the API contract (PR #44), the portal data design (PR #42).
+Sources: Requirements Specification v1.0, Project Plan v1.1 (WBS-1.2), the [architecture note](architecture.md), the [API contract](../../contracts/openapi.yaml) and the [portal data design](portal-data.md).
 
 ## 1. Decisions
 
@@ -18,11 +18,12 @@ Sources: Requirements Specification v1.0, Project Plan v1.1 (WBS-1.2), the archi
 |---|---|---|
 | PostgreSQL 17 with pgvector. One database for all data and the embeddings. | Charter and Project Plan. | Charter |
 | SQLAlchemy 2 with the async API (`asyncpg`). Alembic for migrations. | FastAPI, the answer stream and LiteLLM are async. | Burak, 16.11.2026 |
-| Chiron tables use UUID primary keys. Portal records keep the portal ID in a unique `portal_*_id` column. | The API contract uses UUIDs. Imports match records by the portal ID. | Contract (PR #44) |
+| Chiron tables use UUID primary keys. Portal records keep the portal ID in a unique `portal_*_id` column. | The API contract uses UUIDs. Imports match records by the portal ID. | API contract |
 | Enumerations are text columns with a `CHECK` constraint, not PostgreSQL enum types. | A new value needs only a new constraint, not an `ALTER TYPE`. | Burak |
 | Chiron stores each grade row, not only the success rate. | The success rate is a query and stays correct after a corrected grade. Answers question 7 of the portal data design. | Burak |
 | Each student and each teacher has exactly one administrator. | The mock data and UC-02 use this model. Answers question 2 of the portal data design. | Burak, 16.11.2026 |
 | A later import adds a deleted user again as a new account that is not active. Chiron keeps no list of deleted users. | No trace of a deleted user stays (NFR-06). Answers question 5 of the portal data design. | Burak, 16.11.2026 |
+| A teacher and a student have separate administrator assignments. Moving a teacher does not move the students. | UC-02 A3 of the Requirements Specification. | Requirements Specification |
 | Chiron adds the account fields that the portal does not give: `password_hash`, `activated_at`, `grades_read_at`. | FR-02, FR-11, UC-01 E3. Answers question 6 of the portal data design. | Burak |
 
 ## 2. Tables
@@ -162,7 +163,6 @@ To change the schema: change `models.py`, run `uv run alembic revision --autogen
 |---|---|---|
 | Embedding size. `vector(1024)` is the size of bge-m3. | 1024 | WBS-4.1 (Metin, Berkay). A different model needs a new migration. |
 | The `contents` list of the portal data (videos, documents) | Not in the schema. No requirement uses it yet. | WBS-6.1 (study plan steps) |
-| UC-02 A3: which administrator do the students of a moved teacher get? | The schema supports both answers. | Portal data design, question 3 (Hasan) |
 | When does Chiron read the curriculum? | The schema supports both answers. | Portal data design, question 4 |
 | An answer keeps its text after a source is deleted, but its citations to that source are deleted | Keep the answer | Review |
 | Where Cloud SQL runs and which pgvector version it has | PostgreSQL 17 | WBS-9.1 (Berkay) |

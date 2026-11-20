@@ -19,6 +19,24 @@ concurrency:
 jobs:
   backend:
     runs-on: ubuntu-latest
+    # PostgreSQL with pgvector for the database tests in tests/backend/db (WBS-1.2).
+    # Without DATABASE_URL, pytest skips these tests.
+    services:
+      db:
+        image: pgvector/pgvector:0.8.1-pg17
+        env:
+          POSTGRES_USER: chiron
+          POSTGRES_PASSWORD: chiron
+          POSTGRES_DB: chiron
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U chiron"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 15
+    env:
+      DATABASE_URL: postgresql+asyncpg://chiron:chiron@localhost:5432/chiron
     defaults:
       run:
         working-directory: backend
