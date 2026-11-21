@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "lint": "oxlint && cd .. && frontend/node_modules/.bin/oxlint -c frontend/.oxlintrc.json tests/frontend",
+    "lint": "oxlint --deny-warnings && cd .. && node frontend/node_modules/oxlint/bin/oxlint --deny-warnings -c frontend/.oxlintrc.json tests/frontend",
     "preview": "vite preview",
     "test": "vitest run",
     "typecheck:tests": "tsc -p ../tests/frontend/tsconfig.json",
