@@ -20,6 +20,7 @@ Sources: Requirements Specification v1.0, Project Plan v1.1 (WBS-1.2), the [arch
 | SQLAlchemy 2 with the async API (`asyncpg`). Alembic for migrations. | FastAPI, the answer stream and LiteLLM are async. | Burak, 16.11.2026 |
 | Chiron tables use UUID primary keys. Portal records keep the portal ID in a unique `portal_*_id` column. | The API contract uses UUIDs. Imports match records by the portal ID. | API contract |
 | Enumerations are text columns with a `CHECK` constraint, not PostgreSQL enum types. | A new value needs only a new constraint, not an `ALTER TYPE`. | Burak |
+| The names of unique constraints and indexes have the table name and all columns, for example `uq_study_plans_student_id_week_start`. | Two constraints that start with the same column get different names. Each name tells what it checks. | Review by Metin |
 | Chiron stores each grade row, not only the success rate. | The success rate is a query and stays correct after a corrected grade. Answers question 7 of the portal data design. | Burak |
 | Each student and each teacher has exactly one administrator. | The mock data and UC-02 use this model. Answers question 2 of the portal data design. | Burak, 16.11.2026 |
 | A later import adds a deleted user again as a new account that is not active. Chiron keeps no list of deleted users. | No trace of a deleted user stays (NFR-06). Answers question 5 of the portal data design. | Burak, 16.11.2026 |
@@ -122,6 +123,7 @@ The plan keeps the success rate and the class average of the planning run. Later
 ## 3. Deleting data (FR-09, FR-17, NFR-06)
 
 - **A user is deleted.** The database deletes all rows of the user with `ON DELETE CASCADE`: sources, passages, questions, summaries, quizzes, study plans, grades, token usage, refresh tokens, jobs and assignments. The test `test_deleting_a_user_deletes_the_personal_data` checks this.
+- **An administrator is deleted.** The database refuses the deletion while teachers or students are assigned to the administrator (`ON DELETE RESTRICT` on `teacher_administrators.administrator_id` and `student_administrators.administrator_id`). First move the teachers and the students to another administrator. Then each teacher and each student always has one administrator (section 1). The API does not let an administrator delete an administrator account (`deleteUser` in the contract), so only a person who manages the school setup can do this. The test `test_administrator_with_assignments_cannot_be_deleted` checks this.
 - **A teacher is deleted.** The students stay. Their `student_teachers` rows are deleted, so they have no teacher in that course. In `teaching_assignments` and `assessments`, the teacher becomes null.
 - **A source is deleted.** Its passages, its citations and its links to summaries and quizzes are deleted. A quiz question keeps its text, but its citation becomes null.
 - **Files in Cloud Storage.** The database does not delete files. The service that deletes a user or a source must also delete the files (`storage_key`, `pdf_storage_key`). WBS-2.3 and WBS-4.3 must test this.

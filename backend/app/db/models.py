@@ -32,8 +32,8 @@ EMBEDDING_DIMENSIONS = 1024
 MAX_SOURCE_BYTES = 20 * 1024 * 1024
 
 NAMING_CONVENTION = {
-    "ix": "ix_%(column_0_label)s",
-    "uq": "uq_%(table_name)s_%(column_0_name)s",
+    "ix": "ix_%(table_name)s_%(column_0_N_name)s",
+    "uq": "uq_%(table_name)s_%(column_0_N_name)s",
     "ck": "ck_%(table_name)s_%(constraint_name)s",
     "fk": "fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s",
     "pk": "pk_%(table_name)s",
@@ -174,14 +174,16 @@ class TeacherAdministrator(Base):
     __tablename__ = "teacher_administrators"
 
     teacher_id: Mapped[uuid.UUID] = user_fk(primary_key=True)
-    administrator_id: Mapped[uuid.UUID] = user_fk(index=True)
+    # RESTRICT: move the assignments to another administrator before the deletion.
+    administrator_id: Mapped[uuid.UUID] = user_fk(ondelete="RESTRICT", index=True)
 
 
 class StudentAdministrator(Base):
     __tablename__ = "student_administrators"
 
     student_id: Mapped[uuid.UUID] = user_fk(primary_key=True)
-    administrator_id: Mapped[uuid.UUID] = user_fk(index=True)
+    # RESTRICT: move the assignments to another administrator before the deletion.
+    administrator_id: Mapped[uuid.UUID] = user_fk(ondelete="RESTRICT", index=True)
 
 
 class Assessment(Base):

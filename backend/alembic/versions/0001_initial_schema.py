@@ -2,7 +2,7 @@
 
 Revision ID: 0001
 Revises:
-Create Date: 2026-11-16 21:42:31.921020
+Create Date: 2026-11-21 16:44:39.260215
 
 """
 
@@ -237,7 +237,7 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id", name=op.f("pk_questions")),
     )
     op.create_index(
-        op.f("ix_questions_student_id"),
+        op.f("ix_questions_student_id_course_id_created_at"),
         "questions",
         ["student_id", "course_id", "created_at"],
         unique=False,
@@ -273,7 +273,7 @@ def upgrade() -> None:
             ["administrator_id"],
             ["users.id"],
             name=op.f("fk_student_administrators_administrator_id_users"),
-            ondelete="CASCADE",
+            ondelete="RESTRICT",
         ),
         sa.ForeignKeyConstraint(
             ["student_id"],
@@ -348,7 +348,9 @@ def upgrade() -> None:
             ondelete="CASCADE",
         ),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_study_plans")),
-        sa.UniqueConstraint("student_id", "week_start", name=op.f("uq_study_plans_student_id")),
+        sa.UniqueConstraint(
+            "student_id", "week_start", name=op.f("uq_study_plans_student_id_week_start")
+        ),
     )
     op.create_table(
         "teacher_administrators",
@@ -358,7 +360,7 @@ def upgrade() -> None:
             ["administrator_id"],
             ["users.id"],
             name=op.f("fk_teacher_administrators_administrator_id_users"),
-            ondelete="CASCADE",
+            ondelete="RESTRICT",
         ),
         sa.ForeignKeyConstraint(
             ["teacher_id"],
@@ -419,7 +421,7 @@ def upgrade() -> None:
             ondelete="CASCADE",
         ),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_units")),
-        sa.UniqueConstraint("course_id", "position", name=op.f("uq_units_course_id")),
+        sa.UniqueConstraint("course_id", "position", name=op.f("uq_units_course_id_position")),
         sa.UniqueConstraint("portal_unit_id", name=op.f("uq_units_portal_unit_id")),
     )
     op.create_table(
@@ -457,7 +459,10 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id", name=op.f("pk_quizzes")),
     )
     op.create_index(
-        op.f("ix_quizzes_student_id"), "quizzes", ["student_id", "course_id"], unique=False
+        op.f("ix_quizzes_student_id_course_id"),
+        "quizzes",
+        ["student_id", "course_id"],
+        unique=False,
     )
     op.create_table(
         "sources",
@@ -523,7 +528,10 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id", name=op.f("pk_sources")),
     )
     op.create_index(
-        op.f("ix_sources_student_id"), "sources", ["student_id", "course_id"], unique=False
+        op.f("ix_sources_student_id_course_id"),
+        "sources",
+        ["student_id", "course_id"],
+        unique=False,
     )
     op.create_table(
         "summaries",
@@ -556,7 +564,10 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id", name=op.f("pk_summaries")),
     )
     op.create_index(
-        op.f("ix_summaries_student_id"), "summaries", ["student_id", "course_id"], unique=False
+        op.f("ix_summaries_student_id_course_id"),
+        "summaries",
+        ["student_id", "course_id"],
+        unique=False,
     )
     op.create_table(
         "token_usage",
@@ -604,7 +615,10 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id", name=op.f("pk_token_usage")),
     )
     op.create_index(
-        op.f("ix_token_usage_student_id"), "token_usage", ["student_id", "created_at"], unique=False
+        op.f("ix_token_usage_student_id_created_at"),
+        "token_usage",
+        ["student_id", "created_at"],
+        unique=False,
     )
     op.create_table(
         "topics",
@@ -618,7 +632,7 @@ def upgrade() -> None:
         ),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_topics")),
         sa.UniqueConstraint("portal_topic_id", name=op.f("uq_topics_portal_topic_id")),
-        sa.UniqueConstraint("unit_id", "position", name=op.f("uq_topics_unit_id")),
+        sa.UniqueConstraint("unit_id", "position", name=op.f("uq_topics_unit_id_position")),
     )
     op.create_table(
         "assessment_topics",
@@ -657,7 +671,7 @@ def upgrade() -> None:
             ondelete="CASCADE",
         ),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_passages")),
-        sa.UniqueConstraint("source_id", "position", name=op.f("uq_passages_source_id")),
+        sa.UniqueConstraint("source_id", "position", name=op.f("uq_passages_source_id_position")),
     )
     op.create_index(
         "ix_passages_embedding",
@@ -746,7 +760,9 @@ def upgrade() -> None:
             ["topic_id"], ["topics.id"], name=op.f("fk_study_plan_items_topic_id_topics")
         ),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_study_plan_items")),
-        sa.UniqueConstraint("plan_id", "position", name=op.f("uq_study_plan_items_plan_id")),
+        sa.UniqueConstraint(
+            "plan_id", "position", name=op.f("uq_study_plan_items_plan_id_position")
+        ),
     )
     op.create_table(
         "summary_sources",
@@ -788,7 +804,7 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("assessment_id", "topic_id", "student_id", name=op.f("pk_grades")),
     )
     op.create_index(
-        op.f("ix_grades_student_id"), "grades", ["student_id", "topic_id"], unique=False
+        op.f("ix_grades_student_id_topic_id"), "grades", ["student_id", "topic_id"], unique=False
     )
     op.create_table(
         "question_citations",
@@ -836,7 +852,7 @@ def upgrade() -> None:
             ["topic_id"], ["topics.id"], name=op.f("fk_quiz_questions_topic_id_topics")
         ),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_quiz_questions")),
-        sa.UniqueConstraint("quiz_id", "position", name=op.f("uq_quiz_questions_quiz_id")),
+        sa.UniqueConstraint("quiz_id", "position", name=op.f("uq_quiz_questions_quiz_id_position")),
     )
     op.create_index(
         op.f("ix_quiz_questions_topic_id"), "quiz_questions", ["topic_id"], unique=False
@@ -866,7 +882,9 @@ def upgrade() -> None:
             ondelete="CASCADE",
         ),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_study_plan_steps")),
-        sa.UniqueConstraint("item_id", "position", name=op.f("uq_study_plan_steps_item_id")),
+        sa.UniqueConstraint(
+            "item_id", "position", name=op.f("uq_study_plan_steps_item_id_position")
+        ),
     )
     op.create_table(
         "quiz_options",
@@ -882,7 +900,9 @@ def upgrade() -> None:
             ondelete="CASCADE",
         ),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_quiz_options")),
-        sa.UniqueConstraint("question_id", "position", name=op.f("uq_quiz_options_question_id")),
+        sa.UniqueConstraint(
+            "question_id", "position", name=op.f("uq_quiz_options_question_id_position")
+        ),
     )
     op.create_index(
         "uq_quiz_options_one_correct",
@@ -925,7 +945,7 @@ def downgrade() -> None:
     op.drop_table("quiz_questions")
     op.drop_index(op.f("ix_question_citations_passage_id"), table_name="question_citations")
     op.drop_table("question_citations")
-    op.drop_index(op.f("ix_grades_student_id"), table_name="grades")
+    op.drop_index(op.f("ix_grades_student_id_topic_id"), table_name="grades")
     op.drop_table("grades")
     op.drop_table("summary_sources")
     op.drop_table("study_plan_items")
@@ -940,13 +960,13 @@ def downgrade() -> None:
     op.drop_table("passages")
     op.drop_table("assessment_topics")
     op.drop_table("topics")
-    op.drop_index(op.f("ix_token_usage_student_id"), table_name="token_usage")
+    op.drop_index(op.f("ix_token_usage_student_id_created_at"), table_name="token_usage")
     op.drop_table("token_usage")
-    op.drop_index(op.f("ix_summaries_student_id"), table_name="summaries")
+    op.drop_index(op.f("ix_summaries_student_id_course_id"), table_name="summaries")
     op.drop_table("summaries")
-    op.drop_index(op.f("ix_sources_student_id"), table_name="sources")
+    op.drop_index(op.f("ix_sources_student_id_course_id"), table_name="sources")
     op.drop_table("sources")
-    op.drop_index(op.f("ix_quizzes_student_id"), table_name="quizzes")
+    op.drop_index(op.f("ix_quizzes_student_id_course_id"), table_name="quizzes")
     op.drop_table("quizzes")
     op.drop_table("units")
     op.drop_index(op.f("ix_teaching_assignments_teacher_id"), table_name="teaching_assignments")
@@ -964,7 +984,7 @@ def downgrade() -> None:
     op.drop_table("student_administrators")
     op.drop_index(op.f("ix_refresh_tokens_user_id"), table_name="refresh_tokens")
     op.drop_table("refresh_tokens")
-    op.drop_index(op.f("ix_questions_student_id"), table_name="questions")
+    op.drop_index(op.f("ix_questions_student_id_course_id_created_at"), table_name="questions")
     op.drop_table("questions")
     op.drop_index(op.f("ix_jobs_user_id"), table_name="jobs")
     op.drop_table("jobs")
