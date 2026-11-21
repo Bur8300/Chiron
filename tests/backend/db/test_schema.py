@@ -283,7 +283,7 @@ def test_one_study_plan_for_each_student_and_week(alembic_config, sql) -> None:
     upgrade(alembic_config)
     assert_rejected(
         sql,
-        "uq_study_plans_student_id",
+        "uq_study_plans_student_id_week_start",
         f"INSERT INTO study_plans (student_id, week_start, status) "
         f"VALUES ('{STUDENT}', '2026-11-16', 'ready')",
         f"INSERT INTO study_plans (student_id, week_start, status) "
@@ -310,6 +310,17 @@ def test_deleting_a_user_deletes_the_personal_data(alembic_config, sql) -> None:
         f"VALUES ('{STUDENT}', '{ADMIN}')",
         f"INSERT INTO study_plans (student_id, week_start, status) "
         f"VALUES ('{STUDENT}', '2026-11-16', 'no_grades')",
+        ASSESSMENT,
+        f"INSERT INTO assessment_topics (assessment_id, topic_id, max_points) "
+        f"VALUES ('{QUIZ}', '{TOPIC}', 10)",
+        f"INSERT INTO grades (assessment_id, topic_id, student_id, points) "
+        f"VALUES ('{QUIZ}', '{TOPIC}', '{STUDENT}', 5)",
+        f"INSERT INTO questions (student_id, course_id, question, answer, has_answer) "
+        f"VALUES ('{STUDENT}', '{COURSE}', 'q', 'a', true)",
+        f"INSERT INTO summaries (student_id, course_id, job_id) "
+        f"VALUES ('{STUDENT}', '{COURSE}', '{JOB}')",
+        f"INSERT INTO quizzes (student_id, course_id, job_id) "
+        f"VALUES ('{STUDENT}', '{COURSE}', '{JOB}')",
         f"DELETE FROM users WHERE id = '{STUDENT}'",
     )
     for table in [
@@ -320,6 +331,10 @@ def test_deleting_a_user_deletes_the_personal_data(alembic_config, sql) -> None:
         "student_teachers",
         "student_administrators",
         "study_plans",
+        "grades",
+        "questions",
+        "summaries",
+        "quizzes",
         "jobs",
     ]:
         assert sql(f"SELECT count(*) AS n FROM {table}")[0]["n"] == 0, table
@@ -336,3 +351,32 @@ def test_deleting_a_teacher_keeps_the_students(alembic_config, sql) -> None:
     )
     assert sql(f"SELECT count(*) AS n FROM users WHERE id = '{STUDENT}'")[0]["n"] == 1
     assert sql("SELECT count(*) AS n FROM student_teachers")[0]["n"] == 0
+
+
+@pytest.mark.parametrize(
+    ("table", "member", "constraint"),
+    [
+        (
+            "teacher_administrators",
+            "teacher_id",
+            "fk_teacher_administrators_administrator_id_users",
+        ),
+        (
+            "student_administrators",
+            "student_id",
+            "fk_student_administrators_administrator_id_users",
+        ),
+    ],
+)
+def test_administrator_with_assignments_cannot_be_deleted(
+    alembic_config, sql, table: str, member: str, constraint: str
+) -> None:
+    """Each teacher and student keeps one administrator. Move the assignments first."""
+    upgrade(alembic_config)
+    user = TEACHER if member == "teacher_id" else STUDENT
+    assert_rejected(
+        sql,
+        constraint,
+        f"INSERT INTO {table} ({member}, administrator_id) VALUES ('{user}', '{ADMIN}')",
+        f"DELETE FROM users WHERE id = '{ADMIN}'",
+    )
