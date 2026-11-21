@@ -14,6 +14,9 @@ BACKEND_DIR = Path(__file__).resolve().parents[3] / "backend"
 
 def _admin_dsn() -> str:
     url = os.environ.get("DATABASE_URL")
+    if not url and os.environ.get("CI"):
+        # In CI a missing DATABASE_URL is a broken workflow. Fail instead of a silent skip.
+        pytest.fail("DATABASE_URL is not set in CI. The database tests must run in CI.")
     if not url:
         pytest.skip(
             "DATABASE_URL is not set. Start infra/docker-compose.yml to run database tests."
