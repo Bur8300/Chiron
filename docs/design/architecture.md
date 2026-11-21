@@ -131,7 +131,7 @@ Decision by Burak (16.11.2026), open for team review: access token and refresh t
 - The access token is a JWT with a lifetime of 15 minutes. It holds the user ID and the role.
 - The refresh token is a random value. The database keeps only its hash. The client sends it to `POST /auth/refresh` and gets a new pair. The old refresh token stops working (rotation).
 - `POST /auth/logout` revokes the refresh token (FR-04). It needs only the refresh token, so a client can log out also after the access token expired. The access token stops working at the end of its lifetime.
-- Where the web application keeps the tokens is an open point (see section 6). The mobile applications keep the refresh token in the secure storage of the phone (FR-40).
+- The web application keeps the access token in memory and the refresh token in an `HttpOnly` cookie. The mobile applications keep the refresh token in the secure storage of the phone (FR-40). See the [access and privacy design](access-privacy.md), section 3.
 - Activation and login use two endpoints. There is no endpoint that tells whether a portal ID exists or is active (FR-05).
 - Passwords are stored only as salted hashes (NFR-01).
 
@@ -196,17 +196,11 @@ UC-02 E1 applies only when an administrator moves a student to a teacher: the te
 ## 6. Open points
 
 The documents do not decide these points. The owner decides them in the given activity.
+The [access and privacy design](access-privacy.md) decides the points about passwords, tokens, rate limits, CORS and account deletion.
 
 | Point | Proposal in this draft | Decides in |
 |---|---|---|
-| Account takeover at activation. With only the portal ID, a person who knows the portal ID of another user can activate that account first. | Add a second check, for example a one-time activation code for each user in the portal data. This changes FR-02, so the team must decide. | Team decision; WBS-2.1 (Burak), Requirements Analysis |
-| Password rules (length and others) | Not set | WBS-2.1 (Burak) |
-| Refresh token lifetime | Not set | WBS-2.1 (Burak) |
-| Where the web application keeps the tokens | Not set. Browser storage is open to XSS. Compare it with an `httpOnly` cookie. | WBS-2.1 (Burak) |
-| Reuse detection for refresh tokens: if a revoked refresh token is used again, revoke all tokens of the user (proposal by Metin) | Not set | WBS-2.1 (Burak) |
-| Rate limit on login and activate (proposal by Metin) | Not set | WBS-2.1 (Burak) |
-| CORS: allowed origins, including the Capacitor origins (for example `capacitor://localhost`) | Not set | WBS-2.1 (Burak), WBS-12.1 |
-| Delete a user at once or as a job | At once (`204`) | WBS-2.1 (Burak) |
+| Account takeover at activation. With only the portal ID, a person who knows the portal ID of another user can activate that account first. | Add a second check, for example a one-time activation code for each user in the portal data. This changes FR-02, so the team must decide. | Team decision; Requirements Analysis |
 | Monthly token limit for each student | Not set | Design Specification (FR-37 note) |
 | Where bge-m3 runs | Not set | WBS-4.1, WBS-9.1 |
 | Redis on GCP (Memorystore or another service) | Not set | WBS-9.1 (Berkay) |

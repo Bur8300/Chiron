@@ -117,6 +117,11 @@ def test_password_rules_match_access_design(contract: dict) -> None:
 def test_refresh_and_logout_accept_the_refresh_cookie(contract: dict) -> None:
     for operation_id in ("refreshTokens", "logout"):
         item = operation(contract, operation_id)
-        cookies = [p["name"] for p in item.get("parameters", []) if p.get("in") == "cookie"]
+        shared = contract["components"]["parameters"]
+        parameters = [
+            shared[p["$ref"].rsplit("/", 1)[-1]] if "$ref" in p else p
+            for p in item.get("parameters", [])
+        ]
+        cookies = [p["name"] for p in parameters if p["in"] == "cookie"]
         assert cookies == [REFRESH_COOKIE], operation_id
         assert item["requestBody"]["required"] is False, operation_id

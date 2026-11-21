@@ -82,10 +82,11 @@ paths:
         The user sets a password on the first login (FR-02).
         The API gives the same error for an unknown portal ID and for an account that is already active.
         This does not tell which portal IDs exist (FR-05).
+        Password rules and rate limits: `docs/design/access-privacy.md`.
 
         Open point: with only the portal ID, a person who knows the portal ID of another user
         can activate that account first. The team decides on a second check (for example a
-        one-time activation code in the portal data) in WBS-2.1. See `docs/design/architecture.md` section 6.
+        one-time activation code in the portal data). See `docs/design/access-privacy.md` section 7.
       operationId: activateAccount
       security: []
       requestBody:
@@ -104,7 +105,14 @@ paths:
         "400":
           $ref: "#/components/responses/ActivationFailed"
         "422":
-          $ref: "#/components/responses/ValidationError"
+          description: |
+            The request is not valid (`validation_error`), or the password does not follow the password rules (`weak_password`).
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "429":
+          $ref: "#/components/responses/TooManyAttempts"
 
   /api/v1/auth/login:
     post:
@@ -114,6 +122,7 @@ paths:
         A wrong portal ID and a wrong password give the same error (FR-05).
         For a student, the API reads the latest grades from the portal (FR-11).
         If the portal is not available, the login continues (UC-01 E3).
+        Rate limits: `docs/design/access-privacy.md` section 4.
       operationId: login
       security: []
       requestBody:
@@ -133,6 +142,8 @@ paths:
           $ref: "#/components/responses/LoginFailed"
         "422":
           $ref: "#/components/responses/ValidationError"
+        "429":
+          $ref: "#/components/responses/TooManyAttempts"
 
   /api/v1/auth/refresh:
     post:
@@ -141,10 +152,15 @@ paths:
       description: |
         The API replaces the refresh token with a new one (rotation).
         The mobile applications use this to keep the user logged in (FR-40).
+        The mobile applications send the refresh token in the body. The web application sends no body,
+        and the browser sends the `chiron_refresh` cookie (see `TokenPair`).
+        If a revoked refresh token is used again, the API revokes all refresh tokens of the user (reuse detection).
       operationId: refreshTokens
       security: []
+      parameters:
+        - $ref: "#/components/parameters/RefreshCookie"
       requestBody:
-        required: true
+        required: false
         content:
           application/json:
             schema:
@@ -167,10 +183,13 @@ paths:
         The API revokes the refresh token. After this, the session cannot get new access tokens (FR-04).
         The call needs only the refresh token, so a client can log out also after the access token expired.
         The API returns `204` also for an unknown or revoked refresh token. It does not tell which tokens exist.
+        The web application sends no body. The API reads the `chiron_refresh` cookie and deletes it.
       operationId: logout
       security: []
+      parameters:
+        - $ref: "#/components/parameters/RefreshCookie"
       requestBody:
-        required: true
+        required: false
         content:
           application/json:
             schema:
@@ -1156,6 +1175,15 @@ components:
       description: Access token from `/api/v1/auth/login`, `/api/v1/auth/activate` or `/api/v1/auth/refresh`.
 
   parameters:
+    RefreshCookie:
+      name: chiron_refresh
+      in: cookie
+      required: false
+      description: |
+        Refresh token of the web application. The API sets it as an `HttpOnly`, `Secure`,
+        `SameSite=Strict` cookie with the path `/api/v1/auth` (docs/design/access-privacy.md section 3).
+      schema:
+        type: string
     CourseId:
       name: course_id
       in: path
@@ -1250,6 +1278,18 @@ components:
         application/problem+json:
           schema:
             $ref: "#/components/schemas/Problem"
+    TooManyAttempts:
+      description: |
+        Too many failed attempts for this portal ID or from this IP address (`too_many_attempts`).
+        The `Retry-After` header gives the seconds to wait. See `docs/design/access-privacy.md` section 4.
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
     SourceNotReady:
       description: A selected source is not ready (`source_not_ready`, FR-16).
       content:
@@ -1298,6 +1338,13 @@ components:
                 type: string
 
     # ---------------- auth
+    ClientType:
+      type: string
+      enum: [web, mobile]
+      default: mobile
+      description: |
+        `web`: the API puts the refresh token in the `chiron_refresh` cookie and not in the body.
+        `mobile`: the API puts the refresh token in the body. The application keeps it in secure storage (FR-40).
     ActivateRequest:
       type: object
       required: [portal_id, password]
@@ -1307,6 +1354,13 @@ components:
         password:
           type: string
           format: password
+          minLength: 8
+          maxLength: 128
+          description: |
+            8 to 128 characters. The API refuses a common password and a password that is the same as
+            the portal ID (`weak_password`). No other rules (docs/design/access-privacy.md section 2).
+        client:
+          $ref: "#/components/schemas/ClientType"
     LoginRequest:
       type: object
       required: [portal_id, password]
@@ -1316,20 +1370,27 @@ components:
         password:
           type: string
           format: password
+        client:
+          $ref: "#/components/schemas/ClientType"
     RefreshRequest:
       type: object
       required: [refresh_token]
+      description: Only for the mobile applications. The web application sends the cookie instead.
       properties:
         refresh_token:
           type: string
     TokenPair:
       type: object
-      required: [access_token, refresh_token, token_type, expires_in]
+      required: [access_token, token_type, expires_in]
+      description: |
+        For `client: web`, the body has no `refresh_token`. The API sets the `chiron_refresh` cookie instead.
+        The web application keeps the access token only in memory.
       properties:
         access_token:
           type: string
         refresh_token:
           type: string
+          description: "Only for `client: mobile`. Valid for 30 days after it is issued."
         token_type:
           type: string
           const: bearer
