@@ -89,3 +89,39 @@ def test_every_backend_route_is_in_contract(contract: dict) -> None:
         assert route.path in contract["paths"], route.path
         for method in route.methods:
             assert method.lower() in contract["paths"][route.path], f"{method} {route.path}"
+
+
+# ---------------------------------------------------------------- access design (WBS-2.1)
+
+REFRESH_COOKIE = "chiron_refresh"
+
+
+def operation(contract: dict, operation_id: str) -> dict:
+    for _, _, item in operations(contract):
+        if item["operationId"] == operation_id:
+            return item
+    raise KeyError(operation_id)
+
+
+def test_login_and_activate_document_rate_limit(contract: dict) -> None:
+    for operation_id in ("login", "activateAccount"):
+        assert "429" in operation(contract, operation_id)["responses"], operation_id
+
+
+def test_password_rules_match_access_design(contract: dict) -> None:
+    password = contract["components"]["schemas"]["ActivateRequest"]["properties"]["password"]
+    assert password["minLength"] == 8
+    assert password["maxLength"] == 128
+
+
+def test_refresh_and_logout_accept_the_refresh_cookie(contract: dict) -> None:
+    for operation_id in ("refreshTokens", "logout"):
+        item = operation(contract, operation_id)
+        shared = contract["components"]["parameters"]
+        parameters = [
+            shared[p["$ref"].rsplit("/", 1)[-1]] if "$ref" in p else p
+            for p in item.get("parameters", [])
+        ]
+        cookies = [p["name"] for p in parameters if p["in"] == "cookie"]
+        assert cookies == [REFRESH_COOKIE], operation_id
+        assert item["requestBody"]["required"] is False, operation_id
