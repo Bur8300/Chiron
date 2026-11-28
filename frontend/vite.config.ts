@@ -25,5 +25,12 @@ export default defineConfig({
   test: {
     dir: '../tests/frontend',
     environment: 'jsdom',
+    coverage: {
+      provider: 'v8',
+      // Measure only the application code, not the tests.
+      include: ['src/**/*.{ts,tsx}'],
+      // skipFull: false also lists the files at 100%. html writes coverage/ for the CI artifact.
+      reporter: [['text', { skipFull: false }], 'html'],
+    },
   },
 })

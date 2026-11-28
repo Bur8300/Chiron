@@ -49,7 +49,16 @@ jobs:
       - run: uv sync --locked
       - run: uv run ruff check . ../tests/backend
       - run: uv run ruff format --check . ../tests/backend
-      - run: uv run pytest
+      # Coverage of app/: a table in the log and an HTML report. No minimum yet (team decision).
+      - run: uv run pytest --cov --cov-report=term --cov-report=html
+      - run: uv run coverage report --format=markdown >> "$GITHUB_STEP_SUMMARY"
+      # Keep the report also when a test fails. 30 days is a proposal.
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: backend-coverage
+          path: backend/htmlcov/
+          retention-days: 30
 
   frontend:
     runs-on: ubuntu-latest
@@ -67,5 +76,13 @@ jobs:
       # Lints frontend/src and tests/frontend. Warnings fail the run (see package.json).
       - run: npm run lint
       - run: npm run typecheck:tests
-      - run: npm test
+      # Runs the tests. Coverage of src/: a table in the log and an HTML report.
+      - run: npm run test:coverage
+      # Keep the report also when a test fails. 30 days is a proposal.
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: frontend-coverage
+          path: frontend/coverage/
+          retention-days: 30
       - run: npm run build

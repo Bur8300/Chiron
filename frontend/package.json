@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "typecheck:tests": "tsc -p ../tests/frontend/tsconfig.json",
-    "test:browser": "playwright test"
+    "test:browser": "playwright test",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "react": "^19.3.1",
@@ -27,6 +28,7 @@
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2",
+    "@vitest/coverage-v8": "^5.1.0",
     "jsdom": "^29.1.1",
     "oxlint": "^1.90.0",
     "tailwindcss": "^4.3.5",
